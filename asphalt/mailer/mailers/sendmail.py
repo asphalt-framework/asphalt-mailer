@@ -1,30 +1,53 @@
-from asyncio import coroutine
-from asyncio.events import AbstractEventLoop
-from asyncio.subprocess import create_subprocess_exec, PIPE
+from asyncio import create_subprocess_exec
+from typing import Iterable, Union, Dict, Any
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Iterable, Union
+import subprocess
 import sys
 
 from asphalt.core.util import asynchronous
 
-from .base import BaseMailer
-from ..exc import DeliveryError
+from ..api import Mailer, DeliveryError
+from ..util import get_recipients
+
+__all__ = ['SendmailMailer']
 
 
-class SendmailMailer(BaseMailer):
-    def __init__(self, event_loop: AbstractEventLoop,
-                 sendmail_path: Union[str, Path]='/usr/sbin/sendmail'):
-        self.event_loop = event_loop
-        self.sendmail_path = Path(sendmail_path)
+class SendmailMailer(Mailer):
+    """
+    A mailer that sends mail by running the ``sendmail`` executable in
+    a subprocess.
+
+    :param path: path to the sendmail executable
+    :param defaults: default values for omitted keyword arguments of
+                     :meth:`~asphalt.mailer.api.Mailer.create_message`
+    """
+
+    __slots__ = 'path'
+
+    def __init__(self, *, path: Union[str, Path]='/usr/sbin/sendmail',
+                 defaults: Dict[str, Any]=None):
+        super().__init__(defaults or {})
+        self.path = str(path)
 
     @asynchronous
-    @coroutine
-    def deliver(self, messages: Iterable[EmailMessage]):
+    def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
+        if isinstance(messages, EmailMessage):
+            messages = [messages]
+
         for message in messages:
-            args = [str(self.sendmail_path), '-i'] + self._get_recipients(message)
-            process = yield from create_subprocess_exec(*args, stdin=PIPE, loop=self.event_loop)
+            args = [self.path, '-i', '-B', '8BITMIME'] + get_recipients(message)
+            try:
+                process = yield from create_subprocess_exec(*args, stdin=subprocess.PIPE,
+                                                            stderr=subprocess.PIPE)
+            except Exception as e:
+                raise DeliveryError(str(e), message) from e
+
+            del message['Bcc']
             stdout, stderr = yield from process.communicate(message.as_bytes())
-            if process.return_code:
-                error = (yield from stderr.read()).decode(sys.stdin.encoding)
+            if process.returncode:
+                error = stderr.decode(sys.stderr.encoding).rstrip()
                 raise DeliveryError(error, message)
+
+    def __repr__(self):
+        return '{0.__class__.__name__}({0.path!r})'.format(self)

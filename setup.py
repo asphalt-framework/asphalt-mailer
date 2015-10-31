@@ -30,7 +30,7 @@ setup(
     zip_safe=False,
     packages=[
         'asphalt.mailer',
-        'asphalt.mailer.backend'
+        'asphalt.mailer.mailers'
     ],
     setup_requires=[
         'setuptools_scm >= 1.7.0'
@@ -43,6 +43,7 @@ setup(
             'mailer = asphalt.mailer.component:MailerComponent'
         ],
         'asphalt.mailer.mailers': [
+            'mock = asphalt.mailer.mailers.mock:MockMailer',
             'smtp = asphalt.mailer.mailers.smtp:SMTPMailer',
             'sendmail = asphalt.mailer.mailers.sendmail:SendmailMailer'
         ]
