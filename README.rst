@@ -1,7 +1,15 @@
-Mailer component for Asphalt
-============================
+.. image:: https://travis-ci.org/asphalt-framework/asphalt-mailer.svg?branch=master
+  :target: https://travis-ci.org/asphalt-framework/asphalt-mailer
+  :alt: Build Status
+.. image:: https://coveralls.io/repos/asphalt-framework/asphalt-mailer/badge.svg?branch=master&service=github
+  :target: https://coveralls.io/github/asphalt-framework/asphalt-mailer?branch=master
+  :alt: Code Coverage
+.. image:: https://codeclimate.com/github/asphalt-framework/asphalt-mailer/badges/gpa.svg
+  :target: https://codeclimate.com/github/asphalt-framework/asphalt-mailer
+  :alt: Code Climate
 
-This component provides a means for sending email from Asphalt applications.
+This is a component for the Asphalt framework.
+It provides a means for sending email from Asphalt applications.
 
 
 Project links
