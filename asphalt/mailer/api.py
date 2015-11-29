@@ -34,7 +34,8 @@ class Mailer(metaclass=ABCMeta):
     """
     This is the abstract base class for all mailers.
 
-    :param defaults: default values for omitted keyword arguments of :meth:`create_message`
+    :param defaults: default values for omitted keyword arguments of
+        :meth:`create_message`
     """
 
     __slots__ = 'defaults'
@@ -45,8 +46,8 @@ class Mailer(metaclass=ABCMeta):
     @coroutine
     def start(self, ctx: Context):
         """
-        Called by the component to allow the mailer to perform any necessary setup procedures.
-        It is a coroutine.
+        Called by the component to allow the mailer to perform any
+        necessary setup procedures. It is a coroutine.
 
         :param ctx: the component's context
         """
@@ -62,10 +63,11 @@ class Mailer(metaclass=ABCMeta):
 
         :param subject: subject line for the message
         :param sender: sender address displayed in the message
-                       (the From: header)
+           (the From: header)
         :param to: primary recipient(s) (displayed in the message)
         :param cc: secondary recipient(s) (displayed in the message)
-        :param bcc: secondary recipient(s) (**not** displayed in the message)
+        :param bcc: secondary recipient(s) (**not** displayed in the
+            message)
         :param charset: character encoding of the message
         :param plain_body: plaintext body
         :param html_body: HTML body
@@ -114,12 +116,12 @@ class Mailer(metaclass=ABCMeta):
                             mimetype: str=None):
         """
         Creates an attachment on the given
-        :class:`~email.message.EmailMessage` from a file on the filesystem.
-        This is a coroutine.
+        :class:`~email.message.EmailMessage` from a file on the
+        filesystem. This is a coroutine.
 
-        The default value for the ``filename`` argument is the file name
-        part of the given path. The default value for the ``mimetype``
-        argument is guessed from the file name.
+        The default value for the ``filename`` argument is the file
+        name part of the given path. The default value for the
+        ``mimetype`` argument is guessed from the file name.
 
         :param msg: the message
         :param path: path to the file to attach
@@ -139,12 +141,14 @@ class Mailer(metaclass=ABCMeta):
 
     def create_and_deliver(self, **kwargs):
         """
-        Builds a new email message and delivers it. This is a coroutine.
+        Builds a new email message and delivers it.
+        This is a coroutine.
 
-        This is a shortcut to calling :meth:`create_message` and then passing the result to
-        :meth:`deliver`.
+        This is a shortcut to calling :meth:`create_message` and then
+        passing the result to :meth:`deliver`.
 
-        :param kwargs: keyword arguments passed to :meth:`create_message`
+        :param kwargs: keyword arguments passed to
+            :meth:`create_message`
         """
 
         msg = self.create_message(**kwargs)
