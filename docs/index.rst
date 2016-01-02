@@ -12,6 +12,7 @@ may provide additional backends.
    usage
    testing
    extending
+   versionhistory
 
 Indices and tables
 ==================
