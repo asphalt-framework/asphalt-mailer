@@ -8,9 +8,10 @@ from email.policy import SMTP
 import platform
 import re
 
+from typeguard import check_argument_types
 from asphalt.core.connectors import Connector, create_connector
 from asphalt.core.context import Context
-from asphalt.core.util import asynchronous
+from asphalt.core.concurrency import asynchronous
 
 from ..api import Mailer, DeliveryError
 from ..util import get_recipients
@@ -115,6 +116,7 @@ class SMTPMailer(Mailer):
 
     def __init__(self, *, connector: Union[str, Connector]='tcp://127.0.0.1', username: str=None,
                  password: str=None, timeout: Union[int, float]=10, defaults: Dict[str, Any]=None):
+        assert check_argument_types()
         super().__init__(defaults)
         self.connector = connector
         self.username = username
@@ -129,6 +131,7 @@ class SMTPMailer(Mailer):
 
     @asynchronous
     def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
+        assert check_argument_types()
         if isinstance(messages, EmailMessage):
             messages = [messages]
 

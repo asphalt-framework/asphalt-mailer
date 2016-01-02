@@ -1,6 +1,8 @@
 from email.message import EmailMessage
 from typing import List
 
+from typeguard import check_argument_types
+
 
 def get_recipients(message: EmailMessage) -> List[str]:
     """
@@ -11,8 +13,9 @@ def get_recipients(message: EmailMessage) -> List[str]:
     :class:`~asphalt.mailer.api.Mailer` implementations.
 
     :param message: the source email message
-    """
 
+    """
+    assert check_argument_types()
     recipients = []
     for header in (message['To'], message['Cc'], message['Bcc']):
         if header:

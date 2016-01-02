@@ -2,7 +2,8 @@ from asyncio import coroutine
 from email.message import EmailMessage
 from typing import Iterable, Union, Dict, Any
 
-from asphalt.core.util import asynchronous
+from typeguard import check_argument_types
+from asphalt.core.concurrency import asynchronous
 
 from ..api import Mailer
 
@@ -20,12 +21,14 @@ class MockMailer(Mailer):
     __slots__ = 'messages'
 
     def __init__(self, *, defaults: Dict[str, Any]=None):
+        assert check_argument_types()
         super().__init__(defaults or {})
         self.messages = []
 
     @asynchronous
     @coroutine
     def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
+        assert check_argument_types()
         if isinstance(messages, EmailMessage):
             messages = [messages]
 

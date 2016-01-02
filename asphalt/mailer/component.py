@@ -2,6 +2,7 @@ from asyncio import coroutine
 from typing import Dict, Any
 import logging
 
+from typeguard import check_argument_types
 from asphalt.core.component import Component
 from asphalt.core.context import Context
 from asphalt.core.util import PluginContainer
@@ -33,6 +34,7 @@ class MailerComponent(Component):
     """
 
     def __init__(self, mailers: Dict[str, Dict[str, Any]]=None, **default_mailer_args):
+        assert check_argument_types()
         if mailers and default_mailer_args:
             raise ValueError('specify either a "mailers" dictionary or the default mailer\'s '
                              'options directly, but not both')
@@ -44,8 +46,9 @@ class MailerComponent(Component):
 
         self.mailers = [self.create_mailer(alias, **kwargs) for alias, kwargs in mailers.items()]
 
-    @staticmethod
-    def create_mailer(resource_name: str, backend: str, context_attr: str=None, **backend_kwargs):
+    @classmethod
+    def create_mailer(cls, resource_name: str, backend: str, context_attr: str=None,
+                      **backend_kwargs):
         """
         Instantiates a Mailer backend with the given parameters.
 
@@ -58,8 +61,9 @@ class MailerComponent(Component):
             (defaults to the value of ``resource_name``)
         :param backend_kwargs: keyword arguments passed to the
             constructor of the backend class
-        """
 
+        """
+        assert check_argument_types()
         context_attr = context_attr or resource_name
         mailer = mailer_backends.create_object(backend, **backend_kwargs)
         return resource_name, context_attr, mailer

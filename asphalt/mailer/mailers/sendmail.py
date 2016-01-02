@@ -5,7 +5,8 @@ from pathlib import Path
 import subprocess
 import sys
 
-from asphalt.core.util import asynchronous
+from typeguard import check_argument_types
+from asphalt.core.concurrency import asynchronous
 
 from ..api import Mailer, DeliveryError
 from ..util import get_recipients
@@ -27,11 +28,13 @@ class SendmailMailer(Mailer):
 
     def __init__(self, *, path: Union[str, Path]='/usr/sbin/sendmail',
                  defaults: Dict[str, Any]=None):
+        assert check_argument_types()
         super().__init__(defaults or {})
         self.path = str(path)
 
     @asynchronous
     def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
+        assert check_argument_types()
         if isinstance(messages, EmailMessage):
             messages = [messages]
 

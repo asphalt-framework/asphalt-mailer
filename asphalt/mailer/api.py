@@ -1,3 +1,4 @@
+from typing import Iterable, Union, Dict, Any
 from abc import abstractmethod, ABCMeta
 from asyncio import coroutine
 from email.headerregistry import Address
@@ -5,8 +6,7 @@ from email.message import EmailMessage
 from mimetypes import guess_type
 from pathlib import Path
 
-from typing import Iterable, Union, Dict, Any
-
+from typeguard import check_argument_types
 from asphalt.core.context import Context
 from asphalt.core.concurrency import blocking
 
@@ -71,8 +71,9 @@ class Mailer(metaclass=ABCMeta):
         :param charset: character encoding of the message
         :param plain_body: plaintext body
         :param html_body: HTML body
-        """
 
+        """
+        assert check_argument_types()
         msg = EmailMessage()
         msg['Subject'] = subject or self.defaults.get('subject')
         if sender:
@@ -94,8 +95,8 @@ class Mailer(metaclass=ABCMeta):
 
         return msg
 
-    @staticmethod
-    def add_attachment(msg: EmailMessage, content: bytes, filename: str,
+    @classmethod
+    def add_attachment(cls, msg: EmailMessage, content: bytes, filename: str,
                        mimetype: str='application/octet-stream'):
         """
         Adds binary data as an attachment to an
@@ -105,8 +106,9 @@ class Mailer(metaclass=ABCMeta):
         :param content: the contents of the attachment
         :param mimetype: the MIME type indicating the type of the file
         :param filename: the displayed file name in the message
-        """
 
+        """
+        assert check_argument_types()
         maintype, subtype = mimetype.split('/', 1)
         msg.add_attachment(content, maintype=maintype, subtype=subtype, filename=filename)
 
@@ -127,8 +129,9 @@ class Mailer(metaclass=ABCMeta):
         :param path: path to the file to attach
         :param mimetype: the MIME type indicating the type of the file
         :param filename: the displayed file name in the message
-        """
 
+        """
+        assert check_argument_types()
         path = Path(path)
         with path.open('rb') as f:
             content = f.read()
