@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Iterable, Union, Dict, Any
 
 from asphalt.core.context import Context
-from asphalt.core.util import blocking
+from asphalt.core.concurrency import blocking
 
 __all__ = 'DeliveryError', 'Mailer'
 

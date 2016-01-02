@@ -74,9 +74,10 @@ class TestMailer:
         assert attachments[0]['Content-Type'] == 'application/octet-stream'
         assert attachments[0]['Content-Disposition'] == 'attachment; filename="test.dat"'
 
+    @pytest.mark.asyncio
     def test_add_file_attachment(self, mailer):
         msg = mailer.create_message(subject='foo')
-        mailer.add_file_attachment(msg, __file__)
+        yield from mailer.add_file_attachment(msg, __file__)
         attachments = list(msg.iter_attachments())
         assert len(attachments) == 1
         assert attachments[0]['Content-Type'] == 'text/x-python'

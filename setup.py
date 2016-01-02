@@ -36,7 +36,7 @@ setup(
         'setuptools_scm >= 1.7.0'
     ],
     install_requires=[
-        'asphalt < 2.0.0'
+        'asphalt >= 1.2, < 2.0'
     ],
     entry_points={
         'asphalt.components': [
