@@ -8,15 +8,15 @@ import pytest
 
 from asphalt.mailer.api import DeliveryError
 from asphalt.mailer.mailers.smtp import SMTPMailer, SMTPError
-from tests.mailers.conftest import recipients
 
 
 class MockSMTPServer:
-    def __init__(self, reader, writer, auth_mechanism, fail_on):
+    def __init__(self, reader, writer, auth_mechanism, fail_on, recipients):
         self.reader = reader
         self.writer = writer
         self.auth_mechanism = auth_mechanism
         self.fail_on = fail_on
+        self.recipients = recipients
         self.features = ['8BITMIME', 'PIPELINING']
         if auth_mechanism:
             self.features.append('AUTH %s FOO BAR BAZ' % auth_mechanism)
@@ -47,8 +47,8 @@ class MockSMTPServer:
         self.writer.write(output)
 
     @classmethod
-    def connected(cls, reader, writer, auth_mechanism, fail_on):
-        server = cls(reader, writer, auth_mechanism, fail_on)
+    def connected(cls, reader, writer, auth_mechanism, fail_on, recipients):
+        server = cls(reader, writer, auth_mechanism, fail_on, recipients)
         return server.protocol()
 
     @coroutine
@@ -86,7 +86,7 @@ class MockSMTPServer:
         sender = yield from self.expect('MAIL FROM: <(.+)>')
         assert sender == 'foo@bar.baz'
 
-        for recipient in recipients():
+        for recipient in self.recipients:
             actual = yield from self.expect('RCPT TO: <(.+)>')
             assert actual == recipient
 
@@ -96,7 +96,7 @@ class MockSMTPServer:
             return
 
         self.respond(250, '2.1.0 MAIL ok')
-        for recipient in recipients():
+        for recipient in self.recipients:
             self.respond(250, '2.1.5 <{}> ok'.format(recipient))
         self.respond(354, 'Enter mail, end with "." on a line by itself')
 
@@ -115,10 +115,10 @@ class MockSMTPServer:
 
 
 @pytest.yield_fixture
-def mailer(event_loop, unused_tcp_port, request):
+def mailer(event_loop, unused_tcp_port, request, recipients):
     auth_mechanism, fail_on = request.param
     callback = partial(MockSMTPServer.connected, auth_mechanism=auth_mechanism,
-                       fail_on=fail_on)
+                       fail_on=fail_on, recipients=recipients)
     task = start_server(callback, '127.0.0.1', unused_tcp_port)
     server = event_loop.run_until_complete(task)
     mailer = SMTPMailer(connector='127.0.0.1:{}'.format(unused_tcp_port), username='testuser',
