@@ -6,11 +6,9 @@ from typeguard import check_argument_types
 
 def get_recipients(message: EmailMessage) -> List[str]:
     """
-    Returns a list of email addresses of all the intended
-    recipients of the given message.
+    Return a list of email addresses of all the intended recipients of the given message.
 
-    This function is meant to be used by
-    :class:`~asphalt.mailer.api.Mailer` implementations.
+    This function is meant to be used by :class:`~asphalt.mailer.api.Mailer` implementations.
 
     :param message: the source email message
 

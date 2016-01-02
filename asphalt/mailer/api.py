@@ -19,8 +19,8 @@ class DeliveryError(Exception):
     """
     Raised when there's an error with mail delivery.
 
-    :param error: the error message
-    :param message: the email message related to the failure, if any
+    :ivar error: the error message
+    :ivar message: the email message related to the failure, if any
     """
 
     def __init__(self, error: str, message: EmailMessage=None):
@@ -34,8 +34,7 @@ class Mailer(metaclass=ABCMeta):
     """
     This is the abstract base class for all mailers.
 
-    :param defaults: default values for omitted keyword arguments of
-        :meth:`create_message`
+    :param defaults: default values for omitted keyword arguments of :meth:`create_message`
     """
 
     __slots__ = 'defaults'
@@ -46,8 +45,9 @@ class Mailer(metaclass=ABCMeta):
     @coroutine
     def start(self, ctx: Context):
         """
-        Called by the component to allow the mailer to perform any
-        necessary setup procedures. It is a coroutine.
+        Perform any necessary setup procedures.
+
+        This is a coroutine. This method is called by the component on initialization.
 
         :param ctx: the component's context
         """
@@ -57,17 +57,14 @@ class Mailer(metaclass=ABCMeta):
                        bcc: AddressListType=None, charset: str='utf-8', plain_body: str=None,
                        html_body: str=None) -> EmailMessage:
         """
-        A convenience method for creating an
-        :class:`~email.message.EmailMessage` to be sent later using
-        :meth:`deliver`.
+        A convenience method for creating an :class:`~email.message.EmailMessage` to be sent later
+        using :meth:`deliver`.
 
         :param subject: subject line for the message
-        :param sender: sender address displayed in the message
-           (the From: header)
+        :param sender: sender address displayed in the message (the From: header)
         :param to: primary recipient(s) (displayed in the message)
         :param cc: secondary recipient(s) (displayed in the message)
-        :param bcc: secondary recipient(s) (**not** displayed in the
-            message)
+        :param bcc: secondary recipient(s) (**not** displayed in the message)
         :param charset: character encoding of the message
         :param plain_body: plaintext body
         :param html_body: HTML body
@@ -99,8 +96,7 @@ class Mailer(metaclass=ABCMeta):
     def add_attachment(cls, msg: EmailMessage, content: bytes, filename: str,
                        mimetype: str='application/octet-stream'):
         """
-        Adds binary data as an attachment to an
-        :class:`~email.message.EmailMessage`.
+        Adds binary data as an attachment to an :class:`~email.message.EmailMessage`.
 
         :param msg: the message
         :param content: the contents of the attachment
@@ -117,13 +113,13 @@ class Mailer(metaclass=ABCMeta):
     def add_file_attachment(cls, msg: EmailMessage, path: Union[str, Path], filename: str=None,
                             mimetype: str=None):
         """
-        Creates an attachment on the given
-        :class:`~email.message.EmailMessage` from a file on the
-        filesystem. This is a coroutine.
+        Create an attachment on the given :class:`~email.message.EmailMessage` from a file on the
+        filesystem.
 
-        The default value for the ``filename`` argument is the file
-        name part of the given path. The default value for the
-        ``mimetype`` argument is guessed from the file name.
+        This is a coroutine.
+
+        The default value for the ``filename`` argument is the file name part of the given path.
+        The default value for the ``mimetype`` argument is guessed from the file name.
 
         :param msg: the message
         :param path: path to the file to attach
@@ -144,14 +140,14 @@ class Mailer(metaclass=ABCMeta):
 
     def create_and_deliver(self, **kwargs):
         """
-        Builds a new email message and delivers it.
+        Build a new email message and deliver it.
+
         This is a coroutine.
 
-        This is a shortcut to calling :meth:`create_message` and then
-        passing the result to :meth:`deliver`.
+        This is a shortcut to calling :meth:`create_message` and then passing the result to
+        :meth:`deliver`.
 
-        :param kwargs: keyword arguments passed to
-            :meth:`create_message`
+        :param kwargs: keyword arguments passed to :meth:`create_message`
         """
 
         msg = self.create_message(**kwargs)
@@ -160,7 +156,9 @@ class Mailer(metaclass=ABCMeta):
     @abstractmethod
     def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
         """
-        Delivers the given message(s). This is a coroutine.
+        Deliver the given message(s).
+
+        This is a coroutine.
 
         :param messages: the message or iterable of messages to deliver
         """

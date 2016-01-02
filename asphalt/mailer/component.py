@@ -18,19 +18,15 @@ class MailerComponent(Component):
     """
     Provides a way for sending email.
 
-    Publishes one or more :class:`Mailer` compatible objects as
-    resources and context variables.
+    Publishes one or more :class:`Mailer` compatible objects as resources and context variables.
 
-    If more than one mailer is to be configured, provide a "mailers"
-    argument as a dictionary where the key is the resource name and the
-    value is a dictionary of keyword arguments to
-    :meth:`create_mailer`. Otherwise, directly pass those keyword
-    arguments to the component constructor itself.
+    If more than one mailer is to be configured, provide a ``mailers`` argument as a dictionary
+    where the key is the resource name and the value is a dictionary of keyword arguments to
+    :meth:`create_mailer`. Otherwise, directly pass those keyword arguments to the component
+    constructor itself.
 
-    :param mailers: a dictionary of Mailer resource name ->
-        :meth:`create_mailer` keyword arguments
-    :param default_mailer_args: keyword arguments given to the backend
-        class
+    :param mailers: a dictionary of Mailer resource name -> :meth:`create_mailer` keyword arguments
+    :param default_mailer_args: keyword arguments given to the backend class
     """
 
     def __init__(self, mailers: Dict[str, Dict[str, Any]]=None, **default_mailer_args):
@@ -50,7 +46,7 @@ class MailerComponent(Component):
     def create_mailer(cls, resource_name: str, backend: str, context_attr: str=None,
                       **backend_kwargs):
         """
-        Instantiates a Mailer backend with the given parameters.
+        Configure a Mailer backend with the given parameters.
 
         :param resource_name: resource name the mailer will be
             published as
