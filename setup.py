@@ -1,18 +1,15 @@
-import os.path
+from pathlib import Path
 
 from setuptools import setup
-
-here = os.path.dirname(__file__)
-readme_path = os.path.join(here, 'README.rst')
-readme = open(readme_path).read()
 
 setup(
     name='asphalt-mailer',
     use_scm_version={
+        'version_scheme': 'post-release',
         'local_scheme': 'dirty-tag'
     },
     description='Mailer component for the Asphalt framework',
-    long_description=readme,
+    long_description=Path(__file__).parent.joinpath('README.rst').read_text('utf-8'),
     author='Alex Grönholm',
     author_email='alex.gronholm@nextday.fi',
     url='https://github.com/asphalt-framework/asphalt-mailer',
@@ -23,7 +20,6 @@ setup(
         'Topic :: Communications :: Email',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5'
     ],
     license='Apache License 2.0',
@@ -36,7 +32,7 @@ setup(
         'setuptools_scm >= 1.7.0'
     ],
     install_requires=[
-        'asphalt >= 1.2, < 2.0'
+        'asphalt ~= 2.0'
     ],
     entry_points={
         'asphalt.components': [

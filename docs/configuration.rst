@@ -19,7 +19,8 @@ for the backend class:
     components:
       mailer:
         backend: smtp
-        connector: tcp+ssl://primary-smtp.company.com:465
+        host: primary-smtp.company.com
+        ssl: true
         username: foo
         password: bar
 
@@ -27,20 +28,16 @@ This configuration uses ``primary-smtp.company.com`` as the server hostname and 
 to encrypt the connection. It authenticates with the server using the username ``foo`` and the
 password ``bar``.
 
-.. _TLS: https://en.wikipedia.org/wiki/Transport_Layer_Security
+The above configuration can be done directly in Python code as follows::
 
-The above configuration can be done directly in Python code as follows:
-
-.. code-block:: python
-
-    class MyComponent(ContainerComponent):
-        @coroutine
-        def start(ctx: Context):
+    class ApplicationComponent(ContainerComponent):
+        async def start(ctx: Context):
             self.add_component(
-                'mailer', backend='smtp', connector='tcp+ssl://primary-smtp.company.com:465',
+                'mailer', backend='smtp', host='primary-smtp.company.com', ssl=True,
                 username='foo', password='bar')
-            yield from super().start()
+            await super().start()
 
+.. _TLS: https://en.wikipedia.org/wiki/Transport_Layer_Security
 
 Multiple mailers
 ----------------
@@ -56,13 +53,14 @@ dictionary of resource names to their backend configuration options:
           smtp_a:
             backend: smtp
             context_attr: mailer1
-            connector: tcp+ssl://primary-smtp.company.com:465
+            host: primary-smtp.company.com
+            ssl: true
             username: foo
             password: bar
           smtp_b:
             backend: smtp
             context_attr: mailer2
-            connector: isp-smtp.provider.com
+            host: isp-smtp.provider.com
           sendmail:
             backend: sendmail
             context_attr: mailer3

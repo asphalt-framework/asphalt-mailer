@@ -1,20 +1,21 @@
-from asyncio import coroutine
-from asyncio.streams import StreamWriter, StreamReader
+import platform
+import re
+from asyncio.streams import StreamWriter, StreamReader, open_connection
 from asyncio.tasks import wait_for
-from typing import Iterable, Union, Dict, Any
 from base64 import b64encode
 from email.message import EmailMessage
 from email.policy import SMTP
-import platform
-import re
+from ssl import SSLContext
+from typing import Iterable, Union, Dict, Any
 
+from asyncio_extras.asyncyield import yield_async
+from asyncio_extras.contextmanager import async_contextmanager
 from typeguard import check_argument_types
-from asphalt.core.connectors import Connector, create_connector
-from asphalt.core.context import Context
-from asphalt.core.concurrency import asynchronous
 
-from ..api import Mailer, DeliveryError
-from ..util import get_recipients
+from asphalt.core.context import Context
+from asphalt.core.util import resolve_reference
+from asphalt.mailer.api import Mailer, DeliveryError
+from asphalt.mailer.util import get_recipients
 
 __all__ = 'SMTPError', 'SMTPMailer'
 
@@ -43,32 +44,26 @@ class SMTPConnection:
         self.writer = writer
         self.timeout = timeout
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.writer.close()
-
     @classmethod
-    @coroutine
-    def create(cls, connector: Connector, timeout: int):
-        reader, writer = yield from connector.connect()
-        return cls(reader, writer, timeout)
+    @async_contextmanager
+    async def connect(cls, host, port, ssl, timeout):
+        reader, writer = await wait_for(open_connection(host, port, ssl=ssl), timeout)
+        connection = cls(reader, writer, timeout)
+        await yield_async(connection)
+        writer.close()
 
-    @coroutine
-    def command(self, command: str, *args: str, expect_response: bool=True):
+    async def command(self, command: str, *args: str, expect_response: bool=True):
         # Send the command
         data = ' '.join((command,) + args).encode('ascii') + b'\r\n'
         self.write(data)
         if expect_response:
-            return (yield from self.get_response())
+            return await self.get_response()
 
-    @coroutine
-    def get_response(self):
+    async def get_response(self):
         lines = []
         while True:
             read_task = self.reader.readline()
-            line = yield from wait_for(read_task, self.timeout)
+            line = await wait_for(read_task, self.timeout)
             if not line.endswith(b'\r\n'):
                 raise DeliveryError('server closed connection')
 
@@ -95,49 +90,52 @@ class SMTPMailer(Mailer):
     """
     A mailer that uses the ESMTP protocol (:rfc:`2821`) to send mails.
 
-    Supports only unencrypted or implicit TLS connections.
-    STARTTLS is not supported yet.
-    Connects to port 25 on ``127.0.0.1`` by default.
+    Supports only unencrypted or implicit TLS connections. STARTTLS is not supported yet.
 
-    If you don't know what SMTP server address to use, your Internet
-    service provider should have provided you their SMTP server address
-    when you signed up.
+    :param host: the host name or IP address of the SMTP server to connect to
+    :param port: the port number to connect to (omit to autodetect based on the ``ssl`` parameter)
+    :param ssl: one of the following:
 
-    :param connector: a connector instance or endpoint for
-                      :func:`~asphalt.core.connectors.create_connector`
+        * ``False`` to disable SSL
+        * ``True`` to enable SSL using the default context
+        * an :class:`ssl.SSLContext` instance
+        * a module:varname reference to an :class:`ssl.SSLContext` instance
+        * name of an :class:`ssl.SSLContext` resource
     :param username: user name to authenticate as
     :param password: password to authenticate with
     :param timeout: timeout (in seconds) for connect and read operations
-    :param defaults: default values for omitted keyword arguments of
-                     :meth:`~asphalt.mailer.api.Mailer.create_message`
+    :param message_defaults: default values for omitted keyword arguments of
+        :meth:`~asphalt.mailer.api.Mailer.create_message`
     """
 
-    __slots__ = 'connector', 'username', 'password', 'timeout'
+    __slots__ = 'host', 'port', 'ssl', 'username', 'password', 'timeout'
 
-    def __init__(self, *, connector: Union[str, Connector]='tcp://127.0.0.1', username: str=None,
-                 password: str=None, timeout: Union[int, float]=10, defaults: Dict[str, Any]=None):
+    def __init__(self, *, host: str = '127.0.0.1', port: int = None,
+                 ssl: Union[bool, str, SSLContext] = False, username: str = None,
+                 password: str = None, timeout: Union[int, float] = 10,
+                 message_defaults: Dict[str, Any] = None):
         assert check_argument_types()
-        super().__init__(defaults)
-        self.connector = connector
+        super().__init__(message_defaults)
+        self.host = host
+        self.ssl = resolve_reference(ssl)
+        self.port = port or ('465' if self.ssl else '25')
         self.username = username
         self.password = password
         self.timeout = timeout
 
-    @coroutine
-    def start(self, ctx: Context):
-        if not isinstance(self.connector, Connector):
-            defaults = {'port': 25, 'timeout': self.timeout}
-            self.connector = yield from create_connector(self.connector, defaults, ctx)
+    async def start(self, ctx: Context):
+        if isinstance(self.ssl, str):
+            self.ssl = await ctx.request_resource(SSLContext, self.ssl)
 
-    @asynchronous
-    def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
+    async def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
         assert check_argument_types()
         if isinstance(messages, EmailMessage):
             messages = [messages]
 
-        with (yield from SMTPConnection.create(self.connector, self.timeout)) as connection:
-            yield from connection.get_response()
-            response = yield from connection.command('EHLO', platform.node())
+        async with SMTPConnection.connect(self.host, self.port, self.ssl,
+                                          self.timeout) as connection:
+            await connection.get_response()
+            response = await connection.command('EHLO', platform.node())
             features = response.split('\n')[1:]
             policy = SMTP.clone(cte_type='8bit' if '8BITMIME' in features else '7bit')
             pipelining = 'PIPELINING' in features
@@ -153,9 +151,9 @@ class SMTPMailer(Mailer):
 
                     if 'PLAIN' in auth_mechanisms:
                         token = b64encode('\0{}\0{}'.format(self.username, self.password).encode())
-                        yield from connection.command('AUTH PLAIN', token.decode())
+                        await connection.command('AUTH PLAIN', token.decode())
                     elif 'LOGIN' in auth_mechanisms:
-                        yield from connection.command('AUTH LOGIN', self.username, self.password)
+                        await connection.command('AUTH LOGIN', self.username, self.password)
                     else:
                         raise DeliveryError('server does not support any of our authentication '
                                             'methods')
@@ -164,32 +162,33 @@ class SMTPMailer(Mailer):
                 for message in messages:
                     try:
                         recipients = get_recipients(message)
-                        yield from connection.command(
+                        await connection.command(
                             'MAIL FROM: <{}>'.format(message['From'].addresses[0].addr_spec),
                             expect_response=not pipelining)
                         for recipient in recipients:
-                            yield from connection.command('RCPT TO: <{}>'.format(recipient),
-                                                          expect_response=not pipelining)
+                            await connection.command('RCPT TO: <{}>'.format(recipient),
+                                                     expect_response=not pipelining)
 
-                        yield from connection.command('DATA', expect_response=not pipelining)
+                        await connection.command('DATA', expect_response=not pipelining)
 
                         # If pipelining was in use, the responses to the MAIL, RCPT and DATA
                         # commands will be sent by the server now
                         if pipelining:
                             for _ in range(2 + len(recipients)):
-                                yield from connection.get_response()
+                                await connection.get_response()
 
                         envelope = message.as_bytes(policy=policy)
                         connection.write(envelope + b'\r\n')
-                        yield from connection.command('.')
+                        await connection.command('.')
                     except DeliveryError as e:
                         e.message = message
                         raise
             except DeliveryError:
-                yield from connection.command('QUIT', expect_response=False)
+                await connection.command('QUIT', expect_response=False)
                 raise
             else:
-                yield from connection.command('QUIT', expect_response=False)
+                await connection.command('QUIT', expect_response=False)
 
     def __repr__(self):
-        return '{}({!r})'.format(self.__class__.__name__, str(self.connector))
+        return '{self.__class__.__name__}(host={self.host!r}, port={self.port!r})'.\
+            format(self=self)

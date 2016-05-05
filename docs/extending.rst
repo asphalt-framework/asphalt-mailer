@@ -20,9 +20,7 @@ If you want your mailer to be available as a backend for the
 :class:`~asphalt.mailer.component.MailerComponent`, you need to add the corresponding entry point
 for it. Suppose your mailer class is named ``AwesomeMailer``, lives in the package
 ``foo.bar.awesome`` and you want to give it the alias ``awesome``, add this line to your project's
-``setup.py`` under the ``entrypoints`` argument in the ``asphalt.mailer.mailers`` namespace:
-
-.. code-block:: python
+``setup.py`` under the ``entrypoints`` argument in the ``asphalt.mailer.mailers`` namespace::
 
     setup(
         # (...other arguments...)

@@ -1,11 +1,12 @@
-from asyncio import coroutine, start_server
+import re
+import ssl
+from asyncio import start_server
 from asyncio.tasks import Task, gather, wait_for
 from functools import partial
-import re
 
-from asphalt.core.context import Context
 import pytest
 
+from asphalt.core.context import Context
 from asphalt.mailer.api import DeliveryError
 from asphalt.mailer.mailers.smtp import SMTPMailer, SMTPError
 
@@ -21,15 +22,13 @@ class MockSMTPServer:
         if auth_mechanism:
             self.features.append('AUTH %s FOO BAR BAZ' % auth_mechanism)
 
-    @coroutine
-    def readline(self):
+    async def readline(self):
         read_task = self.reader.readline()
-        line = yield from wait_for(read_task, 1)
+        line = await wait_for(read_task, 1)
         return line.decode().rstrip()
 
-    @coroutine
-    def expect(self, pattern: str):
-        command = yield from self.readline()
+    async def expect(self, pattern: str):
+        command = await self.readline()
         match = re.match(pattern, command)
         if not match:
             raise ValueError('Unexpected command: "{}" did not match "{}"'.
@@ -51,46 +50,45 @@ class MockSMTPServer:
         server = cls(reader, writer, auth_mechanism, fail_on, recipients)
         return server.protocol()
 
-    @coroutine
-    def protocol(self):
+    async def protocol(self):
         if self.fail_on == 'handshake':
             self.writer.close()
             return
         elif self.fail_on == 'protocol':
             self.writer.write(b'blablabla\r\n')
-            yield from self.writer.drain()
+            await self.writer.drain()
             return
         else:
             self.respond(200, 'fake SMTP server')
 
-        yield from self.expect('EHLO \w+')
+        await self.expect('EHLO \w+')
         self.respond(250, 'fake SMTP server', *self.features)
 
         if self.auth_mechanism == 'LOGIN':
-            login, password = yield from self.expect('AUTH LOGIN (\w+) (\w+)')
+            login, password = await self.expect('AUTH LOGIN (\w+) (\w+)')
             assert login == 'testuser' and password == 'testpass'
         elif self.auth_mechanism == 'PLAIN':
-            token = yield from self.expect('AUTH PLAIN (\w+)')
+            token = await self.expect('AUTH PLAIN (\w+)')
             assert token == 'AHRlc3R1c2VyAHRlc3RwYXNz'
         else:
-            yield from self.expect('QUIT')
+            await self.expect('QUIT')
             return
 
         if self.fail_on == 'auth':
             self.respond(535, 'Authentication failed')
-            yield from self.expect('QUIT')
+            await self.expect('QUIT')
             return
         else:
             self.respond(235, 'Accepted')
 
-        sender = yield from self.expect('MAIL FROM: <(.+)>')
+        sender = await self.expect('MAIL FROM: <(.+)>')
         assert sender == 'foo@bar.baz'
 
         for recipient in self.recipients:
-            actual = yield from self.expect('RCPT TO: <(.+)>')
+            actual = await self.expect('RCPT TO: <(.+)>')
             assert actual == recipient
 
-        yield from self.expect('DATA')
+        await self.expect('DATA')
         if self.fail_on == 'delivery':
             self.respond(550, 'Rejected')
             return
@@ -102,7 +100,7 @@ class MockSMTPServer:
 
         message = []
         while True:
-            line = yield from self.readline()
+            line = await self.readline()
             if line == '.':
                 break
             else:
@@ -110,7 +108,7 @@ class MockSMTPServer:
 
         self.respond(250, '2.6.0 message received')
 
-        yield from self.expect('QUIT')
+        await self.expect('QUIT')
         self.respond(221, '2.0.0 goodbye')
 
 
@@ -121,7 +119,7 @@ def mailer(event_loop, unused_tcp_port, request, recipients):
                        fail_on=fail_on, recipients=recipients)
     task = start_server(callback, '127.0.0.1', unused_tcp_port)
     server = event_loop.run_until_complete(task)
-    mailer = SMTPMailer(connector='127.0.0.1:{}'.format(unused_tcp_port), username='testuser',
+    mailer = SMTPMailer(host='127.0.0.1', port=unused_tcp_port, username='testuser',
                         password='testpass', timeout=1)
     event_loop.run_until_complete(mailer.start(Context()))
     yield mailer
@@ -130,17 +128,27 @@ def mailer(event_loop, unused_tcp_port, request, recipients):
     event_loop.run_until_complete(gather(*tasks))
 
 
+@pytest.mark.asyncio
+async def test_resources():
+    mailer = SMTPMailer(ssl='contextresource')
+    context = Context()
+    sslcontext = ssl.create_default_context()
+    context.publish_resource(sslcontext, 'contextresource')
+    await mailer.start(context)
+    assert mailer.ssl is sslcontext
+
+
 @pytest.mark.parametrize('mailer', [('LOGIN', None), ('PLAIN', None)], indirect=True)
 @pytest.mark.asyncio
-def test_deliver(mailer, sample_message):
-    yield from mailer.deliver(sample_message)
+async def test_deliver(mailer, sample_message):
+    await mailer.deliver(sample_message)
 
 
 @pytest.mark.parametrize('mailer', [(None, None), ('BOGUS', None)], indirect=True)
 @pytest.mark.asyncio
-def test_deliver_noauth(mailer, sample_message):
+async def test_deliver_noauth(mailer, sample_message):
     with pytest.raises(DeliveryError) as exc:
-        yield from mailer.deliver(sample_message)
+        await mailer.deliver(sample_message)
 
     assert str(exc.value) == ('error sending mail message: server does not support any '
                               'of our authentication methods')
@@ -148,9 +156,9 @@ def test_deliver_noauth(mailer, sample_message):
 
 @pytest.mark.parametrize('mailer', [('LOGIN', 'auth')], indirect=True)
 @pytest.mark.asyncio
-def test_deliver_auth_error(mailer, sample_message):
+async def test_deliver_auth_error(mailer, sample_message):
     with pytest.raises(DeliveryError) as exc:
-        yield from mailer.deliver(sample_message)
+        await mailer.deliver(sample_message)
 
     assert str(exc.value) == ('error sending mail message: server returned error: '
                               '535 Authentication failed')
@@ -158,18 +166,18 @@ def test_deliver_auth_error(mailer, sample_message):
 
 @pytest.mark.parametrize('mailer', [('LOGIN', 'handshake')], indirect=True)
 @pytest.mark.asyncio
-def test_deliver_handshake_error(mailer, sample_message):
+async def test_deliver_handshake_error(mailer, sample_message):
     with pytest.raises(DeliveryError) as exc:
-        yield from mailer.deliver(sample_message)
+        await mailer.deliver(sample_message)
 
     assert str(exc.value) == 'error sending mail message: server closed connection'
 
 
 @pytest.mark.parametrize('mailer', [('LOGIN', 'protocol')], indirect=True)
 @pytest.mark.asyncio
-def test_deliver_protocol_error(mailer, sample_message):
+async def test_deliver_protocol_error(mailer, sample_message):
     with pytest.raises(DeliveryError) as exc:
-        yield from mailer.deliver(sample_message)
+        await mailer.deliver(sample_message)
 
     assert str(exc.value) == ('error sending mail message: SMTP protocol error: '
                               'received unexpected response: blablabla')
@@ -177,9 +185,9 @@ def test_deliver_protocol_error(mailer, sample_message):
 
 @pytest.mark.parametrize('mailer', [('LOGIN', 'delivery')], indirect=True)
 @pytest.mark.asyncio
-def test_deliver_delivery_error(mailer, sample_message):
+async def test_deliver_delivery_error(mailer, sample_message):
     with pytest.raises(SMTPError) as exc:
-        yield from mailer.deliver(sample_message)
+        await mailer.deliver(sample_message)
 
     assert exc.value.code == 550
     assert exc.value.message is sample_message
@@ -189,4 +197,4 @@ def test_deliver_delivery_error(mailer, sample_message):
 
 @pytest.mark.parametrize('mailer', [('LOGIN', None)], indirect=True)
 def test_repr(mailer):
-    assert repr(mailer).startswith("SMTPMailer('tcp://127.0.0.1:")
+    assert repr(mailer).startswith("SMTPMailer(host='127.0.0.1'")

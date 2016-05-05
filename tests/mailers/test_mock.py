@@ -9,9 +9,9 @@ def mailer():
 
 
 @pytest.mark.asyncio
-def test_deliver(mailer):
+async def test_deliver(mailer):
     for body in ('message 1', 'message 2'):
-        yield from mailer.create_and_deliver(
+        await mailer.create_and_deliver(
             subject='test', sender='foobar@example.org', to='bar@example.org', plain_body=body)
 
     assert len(mailer.messages) == 2

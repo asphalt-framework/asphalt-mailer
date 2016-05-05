@@ -1,16 +1,17 @@
-from typing import Iterable, Union, Dict, Any
 from abc import abstractmethod, ABCMeta
-from asyncio import coroutine
+from collections import Awaitable
 from email.headerregistry import Address
 from email.message import EmailMessage
 from mimetypes import guess_type
 from pathlib import Path
+from typing import Iterable, Union, Dict, Any
 
+from asyncio_extras.threads import call_in_executor
 from typeguard import check_argument_types
-from asphalt.core.context import Context
-from asphalt.core.concurrency import blocking
 
-__all__ = 'DeliveryError', 'Mailer'
+from asphalt.core.context import Context
+
+__all__ = ('DeliveryError', 'Mailer')
 
 AddressListType = Union[str, Address, Iterable[Union[str, Address]]]
 
@@ -23,7 +24,7 @@ class DeliveryError(Exception):
     :ivar message: the email message related to the failure, if any
     """
 
-    def __init__(self, error: str, message: EmailMessage=None):
+    def __init__(self, error: str, message: EmailMessage = None):
         super().__init__(error, message)
 
     def __str__(self):
@@ -34,31 +35,31 @@ class Mailer(metaclass=ABCMeta):
     """
     This is the abstract base class for all mailers.
 
-    :param defaults: default values for omitted keyword arguments of :meth:`create_message`
+    :param message_defaults: default values for omitted keyword arguments of :meth:`create_message`
     """
 
-    __slots__ = 'defaults'
+    __slots__ = 'message_defaults'
 
-    def __init__(self, defaults: Dict[str, Any]=None):
-        self.defaults = defaults or {}
+    def __init__(self, message_defaults: Dict[str, Any] = None):
+        self.message_defaults = message_defaults or {}
+        self.message_defaults.setdefault('charset', 'utf-8')
 
-    @coroutine
-    def start(self, ctx: Context):
+    async def start(self, ctx: Context):
         """
         Perform any necessary setup procedures.
 
-        This is a coroutine. This method is called by the component on initialization.
+        This method is called by the component on initialization.
 
-        :param ctx: the component's context
+        :param ctx: the mailer component's context
         """
 
-    def create_message(self, *, subject: str=None, sender: Union[str, Address]=None,
-                       to: AddressListType=None, cc: AddressListType=None,
-                       bcc: AddressListType=None, charset: str='utf-8', plain_body: str=None,
-                       html_body: str=None) -> EmailMessage:
+    def create_message(self, *, subject: str = None, sender: Union[str, Address] = None,
+                       to: AddressListType = None, cc: AddressListType = None,
+                       bcc: AddressListType = None, charset: str = None, plain_body: str = None,
+                       html_body: str = None) -> EmailMessage:
         """
-        A convenience method for creating an :class:`~email.message.EmailMessage` to be sent later
-        using :meth:`deliver`.
+        Create an :class:`~email.message.EmailMessage` using to be sent later using
+        :meth:`deliver`.
 
         :param subject: subject line for the message
         :param sender: sender address displayed in the message (the From: header)
@@ -72,16 +73,25 @@ class Mailer(metaclass=ABCMeta):
         """
         assert check_argument_types()
         msg = EmailMessage()
-        msg['Subject'] = subject or self.defaults.get('subject')
-        if sender:
-            msg['From'] = sender or self.defaults.get('sender')
-        if to:
-            msg['To'] = to or self.defaults.get('to')
-        if cc:
-            msg['Cc'] = cc or self.defaults.get('cc')
-        if bcc:
-            msg['Bcc'] = bcc or self.defaults.get('bcc')
+        msg['Subject'] = subject or self.message_defaults.get('subject')
 
+        sender = sender or self.message_defaults.get('sender')
+        if sender:
+            msg['From'] = sender
+
+        to = to or self.message_defaults.get('to')
+        if to:
+            msg['To'] = to
+
+        cc = cc or self.message_defaults.get('cc')
+        if cc:
+            msg['Cc'] = cc
+
+        bcc = bcc or self.message_defaults.get('bcc')
+        if bcc:
+            msg['Bcc'] = bcc
+
+        charset = charset or self.message_defaults.get('charset')
         if plain_body is not None and html_body is not None:
             msg.set_content(plain_body, charset=charset)
             msg.add_alternative(html_body, charset=charset, subtype='html')
@@ -94,55 +104,54 @@ class Mailer(metaclass=ABCMeta):
 
     @classmethod
     def add_attachment(cls, msg: EmailMessage, content: bytes, filename: str,
-                       mimetype: str='application/octet-stream'):
+                       mimetype: str = None):
         """
-        Adds binary data as an attachment to an :class:`~email.message.EmailMessage`.
+        Add binary data as an attachment to an :class:`~email.message.EmailMessage`.
+
+        The default value for the ``mimetype`` argument is guessed from the file name.
+        If guessing fails, ``application/octet-stream`` is used.
 
         :param msg: the message
         :param content: the contents of the attachment
-        :param mimetype: the MIME type indicating the type of the file
         :param filename: the displayed file name in the message
+        :param mimetype: the MIME type indicating the type of the file
 
         """
         assert check_argument_types()
+        if not mimetype:
+            mimetype, _encoding = guess_type(filename, False)
+            if not mimetype:
+                mimetype = 'application/octet-stream'
+
         maintype, subtype = mimetype.split('/', 1)
+        if not maintype or not subtype:
+            raise ValueError('mimetype must be a string in the "maintype/subtype" format')
+
         msg.add_attachment(content, maintype=maintype, subtype=subtype, filename=filename)
 
     @classmethod
-    @blocking
-    def add_file_attachment(cls, msg: EmailMessage, path: Union[str, Path], filename: str=None,
-                            mimetype: str=None):
+    async def add_file_attachment(cls, msg: EmailMessage, path: Union[str, Path],
+                                  filename: str = None, mimetype: str = None):
         """
-        Create an attachment on the given :class:`~email.message.EmailMessage` from a file on the
-        filesystem.
+        Read the contents of a file and add them as an attachment to the given message.
 
-        This is a coroutine.
-
-        The default value for the ``filename`` argument is the file name part of the given path.
-        The default value for the ``mimetype`` argument is guessed from the file name.
+        Reads the file contents and then passes the result as ``content`` to
+        :meth:`add_attachment` along with the rest of the arguments.
 
         :param msg: the message
         :param path: path to the file to attach
-        :param mimetype: the MIME type indicating the type of the file
         :param filename: the displayed file name in the message
+        :param mimetype: the MIME type indicating the type of the file
 
         """
         assert check_argument_types()
         path = Path(path)
-        with path.open('rb') as f:
-            content = f.read()
-        if not mimetype:
-            mimetype = guess_type(str(path))[0] or 'application/octet-stream'
-        if filename is None:
-            filename = path.name
+        content = await call_in_executor(path.read_bytes)
+        cls.add_attachment(msg, content, filename or path.name, mimetype)
 
-        cls.add_attachment(msg, content, filename, mimetype)
-
-    def create_and_deliver(self, **kwargs):
+    def create_and_deliver(self, **kwargs) -> Awaitable:
         """
         Build a new email message and deliver it.
-
-        This is a coroutine.
 
         This is a shortcut to calling :meth:`create_message` and then passing the result to
         :meth:`deliver`.
@@ -154,11 +163,9 @@ class Mailer(metaclass=ABCMeta):
         return self.deliver(msg)
 
     @abstractmethod
-    def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
+    async def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
         """
         Deliver the given message(s).
-
-        This is a coroutine.
 
         :param messages: the message or iterable of messages to deliver
         """

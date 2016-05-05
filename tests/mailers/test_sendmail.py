@@ -1,6 +1,6 @@
 import sys
-import os
 
+import os
 import pytest
 
 from asphalt.mailer.api import DeliveryError
@@ -55,9 +55,9 @@ def mailer():
 
 @pytest.mark.parametrize('as_list', [True, False])
 @pytest.mark.asyncio
-def test_deliver(mailer, script, outfile, as_list, sample_message, recipients):
+async def test_deliver(mailer, script, outfile, as_list, sample_message, recipients):
     mailer.path = script
-    yield from mailer.deliver([sample_message] if as_list else sample_message)
+    await mailer.deliver([sample_message] if as_list else sample_message)
     assert outfile.read() == """\
 From: foo@bar.baz
 To: Test Recipient <test@domain.country>, test2@domain.country
@@ -71,20 +71,20 @@ Test content
 
 
 @pytest.mark.asyncio
-def test_deliver_launch_error(mailer, sample_message):
+async def test_deliver_launch_error(mailer, sample_message):
     mailer.path = '/bogus/no/way/this/exists'
     with pytest.raises(DeliveryError) as exc:
-        yield from mailer.deliver(sample_message)
+        await mailer.deliver(sample_message)
 
     assert str(exc.value) == ("error sending mail message: "
                               "[Errno 2] No such file or directory: '/bogus/no/way/this/exists'")
 
 
 @pytest.mark.asyncio
-def test_deliver_error(mailer, sample_message, fail_script):
+async def test_deliver_error(mailer, sample_message, fail_script):
     mailer.path = fail_script
     with pytest.raises(DeliveryError) as exc:
-        yield from mailer.deliver(sample_message)
+        await mailer.deliver(sample_message)
 
     assert str(exc.value) == 'error sending mail message: This is a test error'
 

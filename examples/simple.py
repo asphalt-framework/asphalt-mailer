@@ -1,29 +1,25 @@
 """
-A simple command line tool that connects to an SMTP server, sends a
-mail message and then exits.
+A simple command line tool that connects to an SMTP server, sends a mail message and then exits.
 
-You can experiment by modifying the arguments to add_component()
-and/or ctx.mailer.create_and_deliver().
+To run this, you first need to replace the placeholder value for add_component() and
+ctx.mailer.create_and_deliver().
 """
 
 import asyncio
 import logging
 
-from asphalt.core.component import ContainerComponent
-from asphalt.core.context import Context
-from asphalt.core.runner import run_application
+from asphalt.core import ContainerComponent, Context, run_application
 
 
-class MailSenderComponent(ContainerComponent):
-    @asyncio.coroutine
-    def start(self, ctx: Context):
-        self.add_component('mailer', backend='smtp', connector='tcp+ssl://smtp.example.org:465',
+class ApplicationComponent(ContainerComponent):
+    async def start(self, ctx: Context):
+        self.add_component('mailer', backend='smtp', host='smtp.example.org', ssl=True,
                            username='myusername', password='secret')
-        yield from super().start(ctx)
+        await super().start(ctx)
 
-        yield from ctx.mailer.create_and_deliver(
+        await ctx.mailer.create_and_deliver(
             subject='Test email', sender='Sender <sender@example.org>',
             to='Recipient <person@example.org>', plain_body='Hello, world!')
         asyncio.get_event_loop().stop()
 
-run_application(MailSenderComponent(), logging=logging.DEBUG)
+run_application(ApplicationComponent(), logging=logging.DEBUG)

@@ -5,9 +5,7 @@ When you test an application that uses asphalt-mailer, you don't want it to actu
 emails outside of your testing environment. To that end, it is recommended that you use
 :class:`~asphalt.mailer.mailers.mock.MockMailer` as the mailer backend in your testing
 configuration. This mailer simply stores the sent messages which you can then verify in your test
-function:
-
-.. code-block:: python
+function::
 
     from asphalt.core.component import ContainerComponent
     from asphalt.core.context import Context
@@ -28,7 +26,7 @@ function:
 
 
     @pytest.mark.asyncio
-    def test_foo(context):
+    async def test_foo(context):
         # (do something with the application here that should cause a mail to be sent)
 
         # check that exactly one message was sent, to intended.recipient@example.org
