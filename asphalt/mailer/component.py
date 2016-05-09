@@ -19,16 +19,16 @@ class MailerComponent(Component):
 
     If more than one mailer is to be configured, provide a ``mailers`` argument as a dictionary
     where the key is the resource name and the value is a dictionary of keyword arguments to
-    :meth:`create_mailer`. Otherwise, directly pass those keyword arguments to the component
+    :meth:`configure_mailer`. Otherwise, directly pass those keyword arguments to the component
     constructor itself.
 
     If ``mailers`` is defined, any extra keyword arguments are used as default values for
-    :meth:`create_mailer` for all mailers (:func:`~asphalt.core.util.merge_config` is used to
+    :meth:`configure_mailer` for all mailers (:func:`~asphalt.core.util.merge_config` is used to
     merge the per-mailer arguments with the defaults). Otherwise, a single mailer is created based
     on the provided default arguments, with ``context_attr`` defaulting to ``mailer``.
 
-    :param mailers: a dictionary of resource name ⭢ :meth:`create_mailer` keyword arguments
-    :param default_mailer_args: default values for :meth:`create_mailer`
+    :param mailers: a dictionary of resource name ⭢ :meth:`configure_mailer` keyword arguments
+    :param default_mailer_args: default values for :meth:`configure_mailer`
     """
 
     def __init__(self, mailers: Dict[str, Dict[str, Any]] = None, **default_mailer_args):
@@ -42,11 +42,11 @@ class MailerComponent(Component):
         for resource_name, config in mailers.items():
             config = merge_config(default_mailer_args, config)
             config.setdefault('context_attr', resource_name)
-            context_attr, mailer = self.create_mailer(**config)
+            context_attr, mailer = self.configure_mailer(**config)
             self.mailers.append((resource_name, context_attr, mailer))
 
     @classmethod
-    def create_mailer(cls, context_attr: str, backend: str, **backend_kwargs):
+    def configure_mailer(cls, context_attr: str, backend: str, **backend_kwargs):
         """
         Configure a Mailer backend with the given parameters.
 
