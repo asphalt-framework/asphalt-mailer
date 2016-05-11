@@ -99,7 +99,7 @@ class SMTPMailer(Mailer):
         * ``False`` to disable SSL
         * ``True`` to enable SSL using the default context
         * an :class:`ssl.SSLContext` instance
-        * a module:varname reference to an :class:`ssl.SSLContext` instance
+        * a ``module:varname`` reference to an :class:`~ssl.SSLContext` instance
         * name of an :class:`ssl.SSLContext` resource
     :param username: user name to authenticate as
     :param password: password to authenticate with
