@@ -1,11 +1,16 @@
 .. image:: https://travis-ci.org/asphalt-framework/asphalt-mailer.svg?branch=master
   :target: https://travis-ci.org/asphalt-framework/asphalt-mailer
   :alt: Build Status
-.. image:: https://coveralls.io/repos/asphalt-framework/asphalt-mailer/badge.svg?branch=master&service=github
+.. image:: https://coveralls.io/repos/github/asphalt-framework/asphalt-mailer/badge.svg?branch=master
   :target: https://coveralls.io/github/asphalt-framework/asphalt-mailer?branch=master
   :alt: Code Coverage
 
 This Asphalt framework component provides a means for sending email from Asphalt applications.
+
+Two mechanisms are currently supported:
+
+* SMTP_
+* Sendmail_
 
 Project links
 -------------
@@ -15,6 +20,8 @@ Project links
 * `Source code`_
 * `Issue tracker`_
 
+.. _SMTP: https://fi.wikipedia.org/wiki/SMTP
+.. _Sendmail: https://en.wikipedia.org/wiki/Sendmail
 .. _Documentation: http://asphalt-mailer.readthedocs.org/en/latest/
 .. _Help and support: https://github.com/asphalt-framework/asphalt/wiki/Help-and-support
 .. _Source code: https://github.com/asphalt-framework/asphalt-mailer
