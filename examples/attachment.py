@@ -8,15 +8,14 @@ ctx.mailer.create_and_deliver().
 The program requires one command line argument, the path to the attachment file.
 """
 
-import asyncio
 import logging
 import os.path
 import sys
 
-from asphalt.core import ContainerComponent, Context, run_application
+from asphalt.core import CLIApplicationComponent, Context, run_application
 
 
-class ApplicationComponent(ContainerComponent):
+class ApplicationComponent(CLIApplicationComponent):
     def __init__(self, attachment):
         super().__init__()
         self.attachment = attachment
@@ -26,12 +25,12 @@ class ApplicationComponent(ContainerComponent):
                            username='myusername', password='secret')
         await super().start(ctx)
 
+    async def run(self, ctx: Context):
         message = ctx.mailer.create_message(
             subject='Test email with attachment', sender='Sender <sender@example.org>',
             to='Recipient <person@example.org>', plain_body='Take a look at this file!')
         await ctx.mailer.add_file_attachment(message, self.attachment)
         await ctx.mailer.deliver(message)
-        asyncio.get_event_loop().stop()
 
 
 if len(sys.argv) < 2:
