@@ -19,3 +19,13 @@ notifications:
     on_failure: change
     use_notice: true
     skip_join: true
+
+deploy:
+  provider: pypi
+  user: agronholm
+  password:
+    secure: cBsCoWj8Dey/ls3G4kln9PPq48w29hT3izw5mq0+5iNPKphTRgqS0iplB2EUcJfJCwUuDFyrRiPjjpXYv1d/iQbs6tJe9jMiqtSFjqiqoMpUjhSQtFZ10gFztb98/6HCZio2k5ouZLnB48nhujug4MbqgsvK1GZhf6zFRDRLuDydg8XO/GBUeALRJTeOJm0BNI0ubUvZbrXn2YHoyLiFo9M/9/GLWQATKN1vSSWHfN/zVtfzKyK9fRSsM7JSYXY81IeKSDRHyzxpy1aOmrZcDp21/NDxH8ZOv7Ziid+VNVoCRYcu09DwIGz+a8v34v/yZGRpG3ueiuc8IHTRzBlVV3YlKWNZldd1eS9cXvPQ4TWfg3mZfjtHZaWY4Hjb/vc2sRk/g96IVWZWT9knCOLV736qB4gIv/8g6Z4NM2/uOq6HCBTKv7iYDtA/FAD+eZ2RU3A7h+w8etIlq2UalsxBXL5kk07/cMIL2//dzVPl3eXdkQTd89tUwW+thO2vLeB1KXpkucgHVvZAjYxBqBEZA/EkIxZ/+p1/67JROV7lVBTE4oMCKBce4Z4nMn4FGYkKFNMwKPmh0cj5osrOT1VIrNbfHLAWV7Ra8SWCq/qNLHNx/A/SD12HHEVFfUCmwtTlnhDKKMw8+kjqsO6GD6wkYg2LxvrpGRlOjGBd8B9f/zI=
+  distributions: sdist bdist_wheel
+  on:
+    tags: true
+    repo: asphalt-framework/asphalt-mailer
