@@ -9,20 +9,15 @@ This Asphalt framework component provides a means for sending email from Asphalt
 
 Two mechanisms are currently supported:
 
-* SMTP_
-* Sendmail_
+* `SMTP <https://fi.wikipedia.org/wiki/SMTP>`_
+* `Sendmail <https://en.wikipedia.org/wiki/Sendmail>`_
+
+Third party libraries may provide additional backends.
 
 Project links
 -------------
 
-* `Documentation`_
-* `Help and support`_
-* `Source code`_
-* `Issue tracker`_
-
-.. _SMTP: https://fi.wikipedia.org/wiki/SMTP
-.. _Sendmail: https://en.wikipedia.org/wiki/Sendmail
-.. _Documentation: http://asphalt-mailer.readthedocs.org/en/latest/
-.. _Help and support: https://github.com/asphalt-framework/asphalt/wiki/Help-and-support
-.. _Source code: https://github.com/asphalt-framework/asphalt-mailer
-.. _Issue tracker: https://github.com/asphalt-framework/asphalt-mailer/issues
+* `Documentation <http://asphalt-mailer.readthedocs.org/en/latest/>`_
+* `Help and support <https://github.com/asphalt-framework/asphalt/wiki/Help-and-support>`_
+* `Source code <https://github.com/asphalt-framework/asphalt-mailer>`_
+* `Issue tracker <https://github.com/asphalt-framework/asphalt-mailer/issues>`_

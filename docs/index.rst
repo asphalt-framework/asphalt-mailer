@@ -1,9 +1,12 @@
 Asphalt-mailer documentation
 ============================
 
-Asphalt-mailer provides :class:`~asphalt.mailer.api.Mailer` resources that enable other components
-to send email messages. Two backends (``smtp`` and ``sendmail``) are provided, but other projects
-may provide additional backends.
+.. include:: ../README.rst
+   :start-line: 7
+   :end-before: Project links
+
+Table of contents
+-----------------
 
 .. toctree::
    :maxdepth: 2
@@ -13,8 +16,5 @@ may provide additional backends.
    testing
    extending
    versionhistory
-
-Indices and tables
-==================
 
 * :ref:`API reference <modindex>`
