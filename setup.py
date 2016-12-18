@@ -35,6 +35,14 @@ setup(
     install_requires=[
         'asphalt ~= 2.0'
     ],
+    extras_require={
+        'testing': [
+            'pytest',
+            'pytest-cov',
+            'pytest-catchlog',
+            'pytest-asyncio >= 0.5.0'
+        ]
+    },
     entry_points={
         'asphalt.components': [
             'mailer = asphalt.mailer.component:MailerComponent'
