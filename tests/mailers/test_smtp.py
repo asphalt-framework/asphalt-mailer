@@ -101,7 +101,10 @@ class MockSMTPServer:
         message = []
         while True:
             line = await self.readline()
-            if line == '.':
+            if line.startswith('.'):
+                line = line[1:]
+
+            if line == '':
                 break
             else:
                 message.append(line)

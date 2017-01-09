@@ -3,6 +3,10 @@ Version history
 
 This library adheres to `Semantic Versioning <http://semver.org/>`_.
 
+**2.0.1** (2017-01-09)
+
+- Fixed occasional missing dots in the messages (due to not quoting leading dots)
+
 **2.0.0** (2016-05-09)
 
 - **BACKWARD INCOMPATIBLE** Migrated to Asphalt 2.0

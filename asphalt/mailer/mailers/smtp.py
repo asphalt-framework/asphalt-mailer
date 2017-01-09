@@ -110,6 +110,8 @@ class SMTPMailer(Mailer):
 
     __slots__ = 'host', 'port', 'ssl', 'username', 'password', 'timeout'
 
+    period_re = re.compile(b'^\.', re.MULTILINE)
+
     def __init__(self, *, host: str = '127.0.0.1', port: int = None,
                  ssl: Union[bool, str, SSLContext] = False, username: str = None,
                  password: str = None, timeout: Union[int, float] = 10,
@@ -178,6 +180,7 @@ class SMTPMailer(Mailer):
                                 await connection.get_response()
 
                         envelope = message.as_bytes(policy=policy)
+                        envelope = self.period_re.sub(b'..', envelope)
                         connection.write(envelope + b'\r\n')
                         await connection.command('.')
                     except DeliveryError as e:
