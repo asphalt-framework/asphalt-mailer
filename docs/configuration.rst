@@ -20,24 +20,23 @@ for the backend class:
       mailer:
         backend: smtp
         host: primary-smtp.company.com
-        ssl: true
         username: foo
         password: bar
 
-This configuration uses ``primary-smtp.company.com`` as the server hostname and uses implicit TLS_
-to encrypt the connection. It authenticates with the server using the username ``foo`` and the
-password ``bar``.
+This configuration uses ``primary-smtp.company.com`` as the server hostname. Because it has a
+user name and password defined, the mailer will automatically use port 587 and STARTTLS_ before
+authenticating itself with the server.
 
 The above configuration can be done directly in Python code as follows::
 
     class ApplicationComponent(ContainerComponent):
         async def start(ctx: Context):
             self.add_component(
-                'mailer', backend='smtp', host='primary-smtp.company.com', ssl=True,
-                username='foo', password='bar')
+                'mailer', backend='smtp', host='primary-smtp.company.com', username='foo',
+                password='bar')
             await super().start()
 
-.. _TLS: https://en.wikipedia.org/wiki/Transport_Layer_Security
+.. _STARTTLS: https://en.wikipedia.org/wiki/Opportunistic_TLS
 
 Multiple mailers
 ----------------
@@ -54,7 +53,6 @@ dictionary of resource names to their backend configuration options:
             backend: smtp
             context_attr: mailer1
             host: primary-smtp.company.com
-            ssl: true
             username: foo
             password: bar
           smtp_b:

@@ -7,12 +7,15 @@
 
 This Asphalt framework component provides a means for sending email from Asphalt applications.
 
-Two mechanisms are currently supported:
+Three mechanisms are currently supported:
 
-* `SMTP <https://fi.wikipedia.org/wiki/SMTP>`_
+* `SMTP <https://en.wikipedia.org/wiki/SMTP>`_ (using `aiosmtplib`_)
 * `Sendmail <https://en.wikipedia.org/wiki/Sendmail>`_
+* Mock (just stores sent mails; useful for testing applications)
 
 Third party libraries may provide additional backends.
+
+.. _aiosmtplib: https://github.com/cole/aiosmtplib
 
 Project links
 -------------

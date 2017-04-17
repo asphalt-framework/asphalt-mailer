@@ -1,203 +1,162 @@
-import re
 import ssl
-from asyncio import start_server
-from asyncio.tasks import Task, gather, wait_for
-from functools import partial
+from asyncio import Task
+from base64 import b64decode
+from contextlib import suppress
+from pathlib import Path
+from types import MethodType
 
 import pytest
-
+from aiosmtpd.handlers import Message
+from aiosmtpd.smtp import SMTP
 from asphalt.core.context import Context
+
 from asphalt.mailer.api import DeliveryError
-from asphalt.mailer.mailers.smtp import SMTPMailer, SMTPError
+from asphalt.mailer.mailers.smtp import SMTPMailer
 
 
-class MockSMTPServer:
-    def __init__(self, reader, writer, auth_mechanism, fail_on, recipients):
-        self.reader = reader
-        self.writer = writer
-        self.auth_mechanism = auth_mechanism
-        self.fail_on = fail_on
-        self.recipients = recipients
-        self.features = ['8BITMIME', 'PIPELINING']
-        if auth_mechanism:
-            self.features.append('AUTH %s FOO BAR BAZ' % auth_mechanism)
+@pytest.fixture
+def handler():
+    class MessageHandler(Message):
+        def __init__(self, message_class=None):
+            super().__init__(message_class)
+            self.messages = []
 
-    async def readline(self):
-        read_task = self.reader.readline()
-        line = await wait_for(read_task, 1)
-        return line.decode().rstrip()
+        def handle_message(self, message):
+            self.messages.append(message)
 
-    async def expect(self, pattern: str):
-        command = await self.readline()
-        match = re.match(pattern, command)
-        if not match:
-            raise ValueError('Unexpected command: "{}" did not match "{}"'.
-                             format(command, pattern))
-        groups = match.groups()
-        return groups[0] if len(groups) == 1 else groups
-
-    def respond(self, code: int, *lines):
-        lines = list(lines)
-        for i, line in enumerate(lines):
-            separator = '-' if i < (len(lines) - 1) else ' '
-            lines[i] = str(code) + separator + line
-
-        output = '\r\n'.join(line for line in lines).encode() + b'\r\n'
-        self.writer.write(output)
-
-    @classmethod
-    def connected(cls, reader, writer, auth_mechanism, fail_on, recipients):
-        server = cls(reader, writer, auth_mechanism, fail_on, recipients)
-        return server.protocol()
-
-    async def protocol(self):
-        if self.fail_on == 'handshake':
-            self.writer.close()
-            return
-        elif self.fail_on == 'protocol':
-            self.writer.write(b'blablabla\r\n')
-            await self.writer.drain()
-            return
-        else:
-            self.respond(200, 'fake SMTP server')
-
-        await self.expect('EHLO \w+')
-        self.respond(250, 'fake SMTP server', *self.features)
-
-        if self.auth_mechanism == 'LOGIN':
-            login, password = await self.expect('AUTH LOGIN (\w+) (\w+)')
-            assert login == 'testuser' and password == 'testpass'
-        elif self.auth_mechanism == 'PLAIN':
-            token = await self.expect('AUTH PLAIN (\w+)')
-            assert token == 'AHRlc3R1c2VyAHRlc3RwYXNz'
-        else:
-            await self.expect('QUIT')
-            return
-
-        if self.fail_on == 'auth':
-            self.respond(535, 'Authentication failed')
-            await self.expect('QUIT')
-            return
-        else:
-            self.respond(235, 'Accepted')
-
-        sender = await self.expect('MAIL FROM: <(.+)>')
-        assert sender == 'foo@bar.baz'
-
-        for recipient in self.recipients:
-            actual = await self.expect('RCPT TO: <(.+)>')
-            assert actual == recipient
-
-        await self.expect('DATA')
-        if self.fail_on == 'delivery':
-            self.respond(550, 'Rejected')
-            return
-
-        self.respond(250, '2.1.0 MAIL ok')
-        for recipient in self.recipients:
-            self.respond(250, '2.1.5 <{}> ok'.format(recipient))
-        self.respond(354, 'Enter mail, end with "." on a line by itself')
-
-        message = []
-        while True:
-            line = await self.readline()
-            if line.startswith('.'):
-                line = line[1:]
-
-            if line == '':
-                break
-            else:
-                message.append(line)
-
-        self.respond(250, '2.6.0 message received')
-
-        await self.expect('QUIT')
-        self.respond(221, '2.0.0 goodbye')
+    return MessageHandler()
 
 
-@pytest.yield_fixture
-def mailer(event_loop, unused_tcp_port, request, recipients):
-    auth_mechanism, fail_on = request.param
-    callback = partial(MockSMTPServer.connected, auth_mechanism=auth_mechanism,
-                       fail_on=fail_on, recipients=recipients)
-    task = start_server(callback, '127.0.0.1', unused_tcp_port)
-    server = event_loop.run_until_complete(task)
-    mailer = SMTPMailer(host='127.0.0.1', port=unused_tcp_port, username='testuser',
-                        password='testpass', timeout=1)
-    event_loop.run_until_complete(mailer.start(Context()))
-    yield mailer
+@pytest.fixture(scope='module')
+def client_tls_context():
+    cert_path = Path(__file__).with_name('server.cert')
+    return ssl.create_default_context(cafile=str(cert_path))
+
+
+@pytest.fixture(scope='module')
+def server_tls_context():
+    key_path = Path(__file__).with_name('server.key')
+    cert_path = Path(__file__).with_name('server.cert')
+    ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    ctx.load_cert_chain(str(cert_path), str(key_path))
+    return ctx
+
+
+@pytest.fixture(params=[False, True])
+def tls(request):
+    return request.param
+
+
+@pytest.fixture
+def smtp_server(event_loop, unused_tcp_port, handler, server_tls_context, tls):
+    smtp = SMTP(handler, require_starttls=tls, tls_context=server_tls_context)
+    server = event_loop.run_until_complete(
+        event_loop.create_server(lambda: smtp, port=unused_tcp_port))
+    yield smtp
     server.close()
+    event_loop.run_until_complete(server.wait_closed())
+
+    # The server leaves tasks running so wait until they're done
     tasks = Task.all_tasks(event_loop)
-    event_loop.run_until_complete(gather(*tasks))
+    for task in tasks:
+        with suppress(Exception):
+            event_loop.run_until_complete(task)
+
+
+@pytest.fixture
+def mailer(event_loop, unused_tcp_port, client_tls_context, smtp_server, tls):
+    mailer = SMTPMailer(port=unused_tcp_port, timeout=1, tls=tls, tls_context=client_tls_context)
+    with Context() as ctx:
+        event_loop.run_until_complete(mailer.start(ctx))
+        yield mailer
+
+
+@pytest.mark.parametrize('username, password, tls, expected_port', [
+    ('foo', 'bar', True, 587),
+    ('foo', 'bar', None, 587),
+    ('foo', 'bar', False, 25),
+    ('foo', None, None, 25)
+], ids=['forcetls', 'autotls', 'disabletls', 'nopassword'])
+def test_port_selection(username, password, tls, expected_port):
+    mailer = SMTPMailer(username=username, password=password, tls=tls)
+    assert mailer.port == expected_port
 
 
 @pytest.mark.asyncio
 async def test_resources():
-    mailer = SMTPMailer(ssl='contextresource')
+    mailer = SMTPMailer(tls_context='contextresource')
     context = Context()
     sslcontext = ssl.create_default_context()
-    context.publish_resource(sslcontext, 'contextresource')
+    context.add_resource(sslcontext, 'contextresource')
     await mailer.start(context)
-    assert mailer.ssl is sslcontext
+    assert mailer.tls_context is sslcontext
 
 
-@pytest.mark.parametrize('mailer', [('LOGIN', None), ('PLAIN', None)], indirect=True)
 @pytest.mark.asyncio
-async def test_deliver(mailer, sample_message):
+async def test_deliver(mailer, sample_message, handler):
+    await mailer.deliver(sample_message)
+    assert len(handler.messages) == 1
+    received_message = handler.messages[0]
+
+    headers = dict(received_message.items())
+    del headers['X-Peer']
+    assert headers == {
+        'From': 'foo@bar.baz',
+        'To': 'Test Recipient <test@domain.country>, test2@domain.country',
+        'Cc': 'Test CC <testcc@domain.country>, testcc2@domain.country',
+        'Content-Type': 'text/plain; charset="utf-8"',
+        'Content-Transfer-Encoding': '7bit',
+        'MIME-Version': '1.0',
+        'X-MailFrom': 'foo@bar.baz',
+        'X-RcptTo': ('test@domain.country, test2@domain.country, testcc@domain.country, '
+                     'testcc2@domain.country, testbcc@domain.country, testbcc2@domain.country')
+    }
+    assert received_message.get_payload() == 'Test content'
+
+
+@pytest.mark.asyncio
+async def test_deliver_auth(mailer, sample_message, smtp_server, handler):
+    """Test that authentication works."""
+    async def handle_EHLO(self, smtp, session, envelope, hostname):
+        session.host_name = hostname
+        return '250 AUTH PLAIN'
+
+    async def smtp_AUTH(self, arg):
+        method, credentials = arg.split(' ')
+        credentials = b64decode(credentials)
+        if method == 'PLAIN' and credentials == b'\x00foo\x00bar':
+            await self.push('235 2.7.0 Authentication successful')
+        else:
+            await self.push('535 5.7.8 Authentication credentials invalid')
+
+    handler.handle_EHLO = MethodType(handle_EHLO, handler)
+    smtp_server.smtp_AUTH = MethodType(smtp_AUTH, smtp_server)
+    mailer.username = 'foo'
+    mailer.password = 'bar'
     await mailer.deliver(sample_message)
 
 
-@pytest.mark.parametrize('mailer', [(None, None), ('BOGUS', None)], indirect=True)
 @pytest.mark.asyncio
-async def test_deliver_noauth(mailer, sample_message):
+async def test_deliver_connect_error(mailer, sample_message, unused_tcp_port):
+    mailer._smtp.port = unused_tcp_port + 1
     with pytest.raises(DeliveryError) as exc:
         await mailer.deliver(sample_message)
 
-    assert str(exc.value) == ('error sending mail message: server does not support any '
-                              'of our authentication methods')
+    exc.match('Error connecting to localhost on port %d' % mailer._smtp.port)
 
 
-@pytest.mark.parametrize('mailer', [('LOGIN', 'auth')], indirect=True)
 @pytest.mark.asyncio
-async def test_deliver_auth_error(mailer, sample_message):
+async def test_deliver_error(mailer, sample_message, smtp_server):
+    """Test that SMTP errors during message delivery get converted into DeliveryErrors."""
+    async def smtp_DATA(self, arg):
+        await self.push('503 Error: foo')
+
+    smtp_server.smtp_DATA = MethodType(smtp_DATA, smtp_server)
     with pytest.raises(DeliveryError) as exc:
         await mailer.deliver(sample_message)
 
-    assert str(exc.value) == ('error sending mail message: server returned error: '
-                              '535 Authentication failed')
+    exc.match('Error: foo')
 
 
-@pytest.mark.parametrize('mailer', [('LOGIN', 'handshake')], indirect=True)
-@pytest.mark.asyncio
-async def test_deliver_handshake_error(mailer, sample_message):
-    with pytest.raises(DeliveryError) as exc:
-        await mailer.deliver(sample_message)
-
-    assert str(exc.value) == 'error sending mail message: server closed connection'
-
-
-@pytest.mark.parametrize('mailer', [('LOGIN', 'protocol')], indirect=True)
-@pytest.mark.asyncio
-async def test_deliver_protocol_error(mailer, sample_message):
-    with pytest.raises(DeliveryError) as exc:
-        await mailer.deliver(sample_message)
-
-    assert str(exc.value) == ('error sending mail message: SMTP protocol error: '
-                              'received unexpected response: blablabla')
-
-
-@pytest.mark.parametrize('mailer', [('LOGIN', 'delivery')], indirect=True)
-@pytest.mark.asyncio
-async def test_deliver_delivery_error(mailer, sample_message):
-    with pytest.raises(SMTPError) as exc:
-        await mailer.deliver(sample_message)
-
-    assert exc.value.code == 550
-    assert exc.value.message is sample_message
-    # assert str(exc.value) == ('error sending mail message: SMTP protocol error: '
-    #                           'received unexpected response: blablabla')
-
-
-@pytest.mark.parametrize('mailer', [('LOGIN', None)], indirect=True)
-def test_repr(mailer):
-    assert repr(mailer).startswith("SMTPMailer(host='127.0.0.1'")
+def test_repr(mailer, unused_tcp_port):
+    assert repr(mailer) == "SMTPMailer(host='localhost', port=%d)" % unused_tcp_port

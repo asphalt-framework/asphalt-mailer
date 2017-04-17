@@ -8,7 +8,7 @@ from typing import Iterable, Union, Dict, Any
 from typeguard import check_argument_types
 
 from asphalt.mailer.api import Mailer, DeliveryError
-from asphalt.mailer.util import get_recipients
+from asphalt.mailer.utils import get_recipients
 
 __all__ = ['SendmailMailer']
 
