@@ -33,8 +33,9 @@ setup(
         'setuptools_scm >= 1.7.0'
     ],
     install_requires=[
-        'asphalt ~= 3.0',
-        'aiosmtplib ~= 1.0'
+        'asphalt >= 3.0, < 5.0',
+        'aiosmtplib ~= 1.0',
+        'typeguard ~= 2.0'
     ],
     extras_require={
         'testing': [

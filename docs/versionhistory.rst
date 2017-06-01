@@ -3,6 +3,10 @@ Version history
 
 This library adheres to `Semantic Versioning <http://semver.org/>`_.
 
+**3.0.1**
+
+- Added compatibility with Asphalt 4.0
+
 **3.0.0** (2017-04-17)
 
 - **BACKWARD INCOMPATIBLE** Migrated to Asphalt 3.0
