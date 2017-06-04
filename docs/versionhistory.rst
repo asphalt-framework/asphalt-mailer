@@ -3,7 +3,7 @@ Version history
 
 This library adheres to `Semantic Versioning <http://semver.org/>`_.
 
-**3.0.1**
+**3.0.1** (2016-06-04)
 
 - Added compatibility with Asphalt 4.0
 
