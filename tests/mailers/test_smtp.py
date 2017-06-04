@@ -42,7 +42,7 @@ def server_tls_context():
     return ctx
 
 
-@pytest.fixture(params=[False, True])
+@pytest.fixture(params=[False, True], ids=['plaintext', 'tls'])
 def tls(request):
     return request.param
 
@@ -56,9 +56,10 @@ def smtp_server(event_loop, unused_tcp_port, handler, server_tls_context, tls):
     server.close()
     event_loop.run_until_complete(server.wait_closed())
 
-    # The server leaves tasks running so wait until they're done
-    tasks = Task.all_tasks(event_loop)
-    for task in tasks:
+    # The server leaves tasks running so cancel them
+    pending_tasks = [task for task in Task.all_tasks(event_loop) if not task.done()]
+    for task in pending_tasks:
+        task.cancel()
         with suppress(Exception):
             event_loop.run_until_complete(task)
 
