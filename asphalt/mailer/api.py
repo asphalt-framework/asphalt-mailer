@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABCMeta
-from collections import Awaitable
+from collections.abc import Awaitable
 from email.headerregistry import Address
 from email.message import EmailMessage
 from mimetypes import guess_type
