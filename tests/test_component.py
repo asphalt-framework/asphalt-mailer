@@ -1,3 +1,5 @@
+import logging
+
 from asphalt.core.context import Context
 import pytest
 
@@ -8,6 +10,7 @@ from asphalt.mailer.component import MailerComponent
 @pytest.mark.parametrize('backend', ['smtp', 'sendmail'])
 @pytest.mark.asyncio
 async def test_component_single(caplog, backend):
+    caplog.set_level(logging.INFO, logger='asphalt.mailer.component')
     component = MailerComponent(backend=backend)
     async with Context() as ctx:
         await component.start(ctx)
@@ -23,6 +26,7 @@ async def test_component_single(caplog, backend):
 
 @pytest.mark.asyncio
 async def test_component_multiple(caplog):
+    caplog.set_level(logging.INFO, logger='asphalt.mailer.component')
     component = MailerComponent(mailers={
         'smtp': {'backend': 'smtp', 'context_attr': 'mailer1'},
         'sendmail': {'backend': 'sendmail', 'context_attr': 'mailer2'}
