@@ -41,6 +41,8 @@ jobs:
       after_success: *after_success
 
     - stage: deploy to pypi
+      install: pip install "setuptools >= 36.2.7"
+      script: skip
       deploy:
         provider: pypi
         user: agronholm
