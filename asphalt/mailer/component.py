@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List  # noqa: F401
 
 from asphalt.core import Component, Context, PluginContainer, merge_config, context_teardown
 from async_generator import yield_
@@ -42,7 +42,7 @@ class MailerComponent(Component):
             default_mailer_args.setdefault('context_attr', 'mailer')
             mailers['default'] = default_mailer_args
 
-        self.mailers = []
+        self.mailers = []  # type: List[Mailer]
         for resource_name, config in mailers.items():
             config = merge_config(default_mailer_args, config)
             backend = config.pop('backend')

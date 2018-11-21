@@ -76,8 +76,7 @@ async def test_deliver_launch_error(mailer, sample_message):
     with pytest.raises(DeliveryError) as exc:
         await mailer.deliver(sample_message)
 
-    assert str(exc.value) == ("error sending mail message: "
-                              "[Errno 2] No such file or directory: '/bogus/no/way/this/exists'")
+    assert exc.match(r"^error sending mail message: \[Errno 2\] No such file or directory: ")
 
 
 @pytest.mark.asyncio
@@ -86,7 +85,7 @@ async def test_deliver_error(mailer, sample_message, fail_script):
     with pytest.raises(DeliveryError) as exc:
         await mailer.deliver(sample_message)
 
-    assert str(exc.value) == 'error sending mail message: This is a test error'
+    assert exc.match('^error sending mail message: This is a test error')
 
 
 def test_repr(mailer):

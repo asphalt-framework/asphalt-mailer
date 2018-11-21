@@ -1,5 +1,5 @@
 from email.message import EmailMessage
-from typing import Iterable, Union, Dict, Any
+from typing import Iterable, Union, Dict, Any, List  # noqa: F401
 
 from typeguard import check_argument_types
 
@@ -18,10 +18,10 @@ class MockMailer(Mailer):
 
     __slots__ = 'messages'
 
-    def __init__(self, *, message_defaults: Dict[str, Any]=None):
+    def __init__(self, *, message_defaults: Dict[str, Any] = None):
         assert check_argument_types()
         super().__init__(message_defaults or {})
-        self.messages = []
+        self.messages = []  # type: List[EmailMessage]
 
     async def deliver(self, messages: Union[EmailMessage, Iterable[EmailMessage]]):
         assert check_argument_types()

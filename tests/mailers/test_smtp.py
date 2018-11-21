@@ -1,5 +1,4 @@
 import ssl
-from asyncio import Task
 from base64 import b64decode
 from contextlib import suppress
 from pathlib import Path
@@ -12,6 +11,13 @@ from asphalt.core.context import Context
 
 from asphalt.mailer.api import DeliveryError
 from asphalt.mailer.mailers.smtp import SMTPMailer
+
+try:
+    from asyncio import all_tasks
+except ImportError:
+    def all_tasks(loop=None):
+        from asyncio import Task
+        return {t for t in Task.all_tasks(loop) if not t.done()}
 
 
 @pytest.fixture
@@ -57,8 +63,7 @@ def smtp_server(event_loop, unused_tcp_port, handler, server_tls_context, tls):
     event_loop.run_until_complete(server.wait_closed())
 
     # The server leaves tasks running so cancel them
-    pending_tasks = [task for task in Task.all_tasks(event_loop) if not task.done()]
-    for task in pending_tasks:
+    for task in all_tasks(event_loop):
         task.cancel()
         with suppress(Exception):
             event_loop.run_until_complete(task)

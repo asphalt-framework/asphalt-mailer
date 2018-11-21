@@ -1,6 +1,5 @@
 import logging
 from email.message import EmailMessage
-from numbers import Real
 from ssl import SSLContext
 from typing import Iterable, Union, Dict, Any
 
@@ -38,7 +37,7 @@ class SMTPMailer(Mailer):
 
     def __init__(self, *, host: str = 'localhost', port: int = None, tls: bool = None,
                  tls_context: Union[str, SSLContext] = None,
-                 username: str = None, password: str = None, timeout: Real = 10,
+                 username: str = None, password: str = None, timeout: float = 10,
                  message_defaults: Dict[str, Any] = None):
         assert check_argument_types()
         super().__init__(message_defaults or {})

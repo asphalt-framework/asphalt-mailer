@@ -73,23 +73,23 @@ class Mailer(metaclass=ABCMeta):
         """
         assert check_argument_types()
         msg = EmailMessage()
-        msg['Subject'] = subject or self.message_defaults.get('subject')
+        msg['Subject'] = subject or self.message_defaults.get('subject')  # type: ignore
 
         sender = sender or self.message_defaults.get('sender')
         if sender:
-            msg['From'] = sender
+            msg['From'] = sender  # type: ignore
 
         to = to or self.message_defaults.get('to')
         if to:
-            msg['To'] = to
+            msg['To'] = to  # type: ignore
 
         cc = cc or self.message_defaults.get('cc')
         if cc:
-            msg['Cc'] = cc
+            msg['Cc'] = cc  # type: ignore
 
         bcc = bcc or self.message_defaults.get('bcc')
         if bcc:
-            msg['Bcc'] = bcc
+            msg['Bcc'] = bcc  # type: ignore
 
         charset = charset or self.message_defaults.get('charset')
         if plain_body is not None and html_body is not None:
@@ -127,7 +127,8 @@ class Mailer(metaclass=ABCMeta):
         if not maintype or not subtype:
             raise ValueError('mimetype must be a string in the "maintype/subtype" format')
 
-        msg.add_attachment(content, maintype=maintype, subtype=subtype, filename=filename)
+        msg.add_attachment(content, maintype=maintype, subtype=subtype,  # type: ignore
+                           filename=filename)
 
     @classmethod
     async def add_file_attachment(cls, msg: EmailMessage, path: Union[str, Path],
