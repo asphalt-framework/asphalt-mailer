@@ -3,7 +3,11 @@ Version history
 
 This library adheres to `Semantic Versioning <http://semver.org/>`_.
 
-**3.0.2** (2018-09-27)
+**3.0.3** (2018-11-21)
+
+- Retry of the previous release, with all reported code style errors fixed
+
+**3.0.2** (2018-09-27, never uploaded to PyPI)
 
 - Fixed deprecation warning about importing ABCs directly from ``collections``
 
