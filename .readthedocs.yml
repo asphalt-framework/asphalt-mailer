@@ -6,8 +6,4 @@ build:
 python:
   version: "3.6"
   pip_install: true
-  extra_requirements:
-    - doc
-    - msgpack
-    - cbor
-    - yaml
+  extra_requirements: [doc]
