@@ -3,6 +3,10 @@ Version history
 
 This library adheres to `Semantic Versioning <http://semver.org/>`_.
 
+**3.0.4** (2018-12-05)
+
+- Fixed SMTP connection staying open when a ``DeliveryError`` is raised
+
 **3.0.3** (2018-11-21)
 
 - Retry of the previous release, with all reported code style errors fixed

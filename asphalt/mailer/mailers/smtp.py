@@ -3,7 +3,7 @@ from email.message import EmailMessage
 from ssl import SSLContext
 from typing import Iterable, Union, Dict, Any
 
-from aiosmtplib import SMTP
+from aiosmtplib import SMTP, SMTPTimeoutError
 from asphalt.core import Context
 from typeguard import check_argument_types
 
@@ -64,28 +64,30 @@ class SMTPMailer(Mailer):
             messages = [messages]
 
         try:
-            await self._smtp.connect()
-
-            # Switch to TLS if required
-            if self.tls and not self._smtp.use_tls:
-                await self._smtp.starttls()
-
-            # Authenticate if needed
-            if None not in (self.username, self.password):
-                await self._smtp.login(self.username, self.password)
-        except Exception as e:
-            raise DeliveryError(str(e)) from e
-
-        for message in messages:
             try:
-                await self._smtp.send_message(message)
-            except Exception as e:
-                raise DeliveryError(str(e), message) from e
+                await self._smtp.connect()
 
-        try:
-            await self._smtp.quit()
-        except Exception:  # pragma: nocover
-            pass
+                # Switch to TLS if required
+                if self.tls and not self._smtp.use_tls:
+                    await self._smtp.starttls()
+
+                # Authenticate if needed
+                if None not in (self.username, self.password):
+                    await self._smtp.login(self.username, self.password)
+            except Exception as e:
+                raise DeliveryError(str(e)) from e
+
+            for message in messages:
+                try:
+                    await self._smtp.send_message(message)
+                except Exception as e:
+                    raise DeliveryError(str(e), message) from e
+        finally:
+            if self._smtp.is_connected:
+                try:
+                    await self._smtp.quit()
+                except (ConnectionError, SMTPTimeoutError):  # pragma: nocover
+                    self._smtp.close()
 
     def __repr__(self):
         return '{self.__class__.__name__}(host={self.host!r}, port={self.port})'.format(self=self)
