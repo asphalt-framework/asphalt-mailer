@@ -3,6 +3,16 @@ Version history
 
 This library adheres to `Semantic Versioning <http://semver.org/>`_.
 
+**UNRELEASED**
+
+- **BACKWARD INCOMPATIBLE** Bumped minimum Asphalt version to 4.8
+- **BACKWARD INCOMPATIBLE** Bumped minimum aiosmtplib version to 2.0
+- **BACKWARD INCOMPATIBLE** Refactored component to only provide a single mailer
+  (you will have to add two components to get two serializers)
+- **BACKWARD INCOMPATIBLE** Dropped the context attribute (use dependency injection
+  instead)
+- Dropped explicit run-time type checking
+
 **3.0.4** (2018-12-05)
 
 - Fixed SMTP connection staying open when a ``DeliveryError`` is raised

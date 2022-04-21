@@ -32,4 +32,3 @@ function::
         # check that exactly one message was sent, to intended.recipient@example.org
         assert len(context.mailer.messages) == 1
         assert context.mailers.messages[0]['To'] == 'intended.recipient@example.org'
-

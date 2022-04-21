@@ -13,5 +13,6 @@ Table of contents
    testing
    extending
    versionhistory
+   py-modindex
 
 * :ref:`API reference <modindex>`

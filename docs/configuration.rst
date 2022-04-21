@@ -1,12 +1,15 @@
 Configuration
 =============
 
+.. highlight:: yaml
+.. py:currentmodule:: asphalt.mailer
+
 To configure a mailer for your application, you need to choose a backend and then specify
 any necessary configuration values for it. The following backends are provided out of the box:
 
-* :mod:`~asphalt.mailer.mailers.smtp` (**recommended**)
-* :mod:`~asphalt.mailer.mailers.sendmail`
-* :mod:`~asphalt.mailer.mailers.mock` (for testing only)
+* :mod:`~.mailers.smtp` (**recommended**)
+* :mod:`~.mailers.sendmail`
+* :mod:`~.mailers.mock` (for testing only)
 
 Other backends may be provided by other components.
 
@@ -41,28 +44,19 @@ The above configuration can be done directly in Python code as follows::
 Multiple mailers
 ----------------
 
-If you need multiple mailers, you need to specify them via the ``mailers`` argument, which is a
-dictionary of resource names to their backend configuration options:
+If you need to configure multiple mailers, you will need to use multiple instances
+of the mailer component::
 
 .. code-block:: yaml
 
     components:
       mailer:
-        mailers:
-          smtp_a:
-            backend: smtp
-            context_attr: mailer1
-            host: primary-smtp.company.com
-            username: foo
-            password: bar
-          smtp_b:
-            backend: smtp
-            context_attr: mailer2
-            host: isp-smtp.provider.com
-          sendmail:
-            backend: sendmail
-            context_attr: mailer3
+        backend: smtp
+        host: primary-smtp.company.com
+        username: foo
+        password: dummypass
+      mailer2:
+        type: mailer
+        backend: sendmail
 
-This configures three mailer resources, named ``smtp_a``, ``smtp_b`` and ``sendmail``.
-Their corresponding context attributes are ``mailer1``, ``mailer2`` and ``mailer3``.
-If you omit the ``context_attr`` option for a mailer, its resource name will be used.
+The above configuration creates two mailer resources: ``mailer`` and ``mailer2``.

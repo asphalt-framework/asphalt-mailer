@@ -1,2 +1,104 @@
 [build-system]
-requires = ["setuptools >= 40.1.0", "wheel", "setuptools_scm >= 1.7.0"]
+requires = [
+    "setuptools >= 61",
+    "setuptools_scm >= 6.4"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asphalt-mailer"
+description = "Mailer component for the Asphalt framework"
+readme = "README.rst"
+authors = [{name = "Alex Grönholm", email = "alex.gronholm@nextday.fi"}]
+license = {text = "Apache License 2.0"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Communications :: Email",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "asphalt ~= 4.8",
+    "aiosmtplib ~= 2.0",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/asphalt-framework/asphalt-mailer"
+
+[project.optional-dependencies]
+test = [
+    "aiosmtpd",
+    "anyio >= 3.6.1",
+    "pytest",
+    "trustme",
+]
+doc = [
+    "Sphinx >= 1.5",
+    "sphinx_rtd_theme",
+    "sphinx-autodoc-typehints >= 1.2.0",
+    "sphinxcontrib-asyncio >= 0.2.0",
+]
+
+[project.entry-points."asphalt.components"]
+mailer = "asphalt.mailer.component:MailerComponent"
+
+[project.entry-points."asphalt.mailer.mailers"]
+mock = "asphalt.mailer.mailers.mock:MockMailer"
+smtp = "asphalt.mailer.mailers.smtp:SMTPMailer"
+sendmail = "asphalt.mailer.mailers.sendmail:SendmailMailer"
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "dirty-tag"
+
+[tool.isort]
+skip_gitignore = true
+profile = "black"
+
+[tool.flake8]
+max-line-length = 88
+
+[tool.pytest.ini_options]
+addopts = "-rsx --tb=short"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.8"
+strict = true
+mypy_path = ["src", "tests"]
+
+[tool.coverage.run]
+source = ["asphalt.mailer"]
+relative_files = true
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py37, py38, py39, py310, py311, pypy3
+skip_missing_interpreters = true
+minversion = 4.0
+
+[testenv]
+extras = test
+commands = python -m pytest {posargs}
+
+[testenv:py311]
+deps = aiosmtpd @ git+https://github.com/aio-libs/aiosmtpd.git@693c5fdd4398f3582978d9b25b6e4104270c2237
+
+[testenv:docs]
+extras = doc
+commands = sphinx-build docs build/sphinx {posargs}
+"""

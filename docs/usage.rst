@@ -118,4 +118,3 @@ instance if the error is specific to a single message::
                 to='recipient@company.com', plain_body='Greetings from Example!')
         except DeliveryError as e:
             print('Delivery to {} failed: {}'.format(e.message['To'], e.error))
-

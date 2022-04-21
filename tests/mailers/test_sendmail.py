@@ -1,24 +1,33 @@
-import sys
+from __future__ import annotations
 
 import os
+import sys
+from email.message import EmailMessage
+from pathlib import Path
+
 import pytest
 
-from asphalt.mailer.api import DeliveryError
+from asphalt.mailer.api import DeliveryError, Mailer
 from asphalt.mailer.mailers.sendmail import SendmailMailer
 
-pytestmark = pytest.mark.skipif(os.name == 'nt',
-                                reason="subprocesses don't work with WindowsSelectorEventLoop")
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.skipif(
+        os.name == "nt", reason="subprocesses don't work with WindowsSelectorEventLoop"
+    ),
+]
 
 
 @pytest.fixture
-def outfile(tmpdir):
-    return tmpdir.join('outfile')
+def outfile(tmp_path: Path) -> Path:
+    return tmp_path / "outfile"
 
 
 @pytest.fixture
-def script(tmpdir, recipients, outfile):
-    p = tmpdir.join('sendmail')
-    p.write("""\
+def script(tmp_path: Path, recipients: tuple[str, ...], outfile: Path) -> str:
+    p = tmp_path / "sendmail"
+    p.write_text(
+        """\
 #!{interpreter}
 import sys
 
@@ -28,37 +37,52 @@ if sys.argv[1:] != ['-i', '-B', '8BITMIME'] + list({recipients!r}):
 
 with open({outfile!r}, 'w') as f:
     f.write(sys.stdin.read())
-""".format(interpreter=sys.executable, recipients=recipients, outfile=str(outfile)))
+""".format(
+            interpreter=sys.executable, recipients=recipients, outfile=str(outfile)
+        )
+    )
     p.chmod(0o555)
     return str(p)
 
 
 @pytest.fixture
-def fail_script(tmpdir):
-    p = tmpdir.join('sendmail')
-    p.write("""\
+def fail_script(tmp_path: Path) -> str:
+    p = tmp_path / "sendmail"
+    p.write_text(
+        """\
 #!{interpreter}
 import sys
 
 print('This is a test error', file=sys.stderr)
 sys.exit(1)
 
-""".format(interpreter=sys.executable))
+""".format(
+            interpreter=sys.executable
+        )
+    )
     p.chmod(0o555)
     return str(p)
 
 
 @pytest.fixture
-def mailer():
+def mailer() -> SendmailMailer:
     return SendmailMailer()
 
 
-@pytest.mark.parametrize('as_list', [True, False])
-@pytest.mark.asyncio
-async def test_deliver(mailer, script, outfile, as_list, sample_message, recipients):
+@pytest.mark.parametrize("as_list", [True, False])
+async def test_deliver(
+    mailer: SendmailMailer,
+    script: str,
+    outfile: Path,
+    as_list: bool,
+    sample_message: EmailMessage,
+    recipients: tuple[str, ...],
+) -> None:
     mailer.path = script
     await mailer.deliver([sample_message] if as_list else sample_message)
-    assert outfile.read() == """\
+    assert (
+        outfile.read_text()
+        == """\
 From: foo@bar.baz
 To: Test Recipient <test@domain.country>, test2@domain.country
 Cc: Test CC <testcc@domain.country>, testcc2@domain.country
@@ -68,25 +92,30 @@ MIME-Version: 1.0
 
 Test content
 """
+    )
 
 
-@pytest.mark.asyncio
-async def test_deliver_launch_error(mailer, sample_message):
-    mailer.path = '/bogus/no/way/this/exists'
+async def test_deliver_launch_error(
+    mailer: SendmailMailer, sample_message: EmailMessage
+) -> None:
+    mailer.path = "/bogus/no/way/this/exists"
     with pytest.raises(DeliveryError) as exc:
         await mailer.deliver(sample_message)
 
-    assert exc.match(r"^error sending mail message: \[Errno 2\] No such file or directory: ")
+    assert exc.match(
+        r"^error sending mail message: \[Errno 2\] No such file or directory: "
+    )
 
 
-@pytest.mark.asyncio
-async def test_deliver_error(mailer, sample_message, fail_script):
+async def test_deliver_error(
+    mailer: SendmailMailer, sample_message: EmailMessage, fail_script: str
+) -> None:
     mailer.path = fail_script
     with pytest.raises(DeliveryError) as exc:
         await mailer.deliver(sample_message)
 
-    assert exc.match('^error sending mail message: This is a test error')
+    assert exc.match("^error sending mail message: This is a test error")
 
 
-def test_repr(mailer):
-    assert repr(mailer) == "SendmailMailer('/usr/sbin/sendmail')".format()
+def test_repr(mailer: Mailer) -> None:
+    assert repr(mailer) == "SendmailMailer('/usr/sbin/sendmail')"

@@ -1,9 +1,12 @@
-.. image:: https://travis-ci.org/asphalt-framework/asphalt-mailer.svg?branch=master
-  :target: https://travis-ci.org/asphalt-framework/asphalt-mailer
+.. image:: https://github.com/asphalt-framework/asphalt-mailer/actions/workflows/test.yml/badge.svg
+  :target: https://github.com/asphalt-framework/asphalt-mailer/actions/workflows/test.yml
   :alt: Build Status
 .. image:: https://coveralls.io/repos/github/asphalt-framework/asphalt-mailer/badge.svg?branch=master
   :target: https://coveralls.io/github/asphalt-framework/asphalt-mailer?branch=master
   :alt: Code Coverage
+.. image:: https://readthedocs.org/projects/asphalt-mailer/badge/?version=latest
+  :target: https://asphalt-mailer.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
 
 This Asphalt framework component provides a means for sending email from Asphalt applications.
 
