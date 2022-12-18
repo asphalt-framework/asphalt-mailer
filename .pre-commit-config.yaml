@@ -41,7 +41,12 @@ repos:
     hooks:
       - id: mypy
         args: ["--explicit-package-bases"]
-        additional_dependencies: [ "asphalt", "pytest", "aiosmtpd", "aiosmtplib", "trustme" ]
+        additional_dependencies:
+          - aiosmtpd
+          - aiosmtplib
+          - asphalt
+          - pytest
+          - trustme
 
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.9.0
