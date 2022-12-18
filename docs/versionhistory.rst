@@ -3,7 +3,7 @@ Version history
 
 This library adheres to `Semantic Versioning <http://semver.org/>`_.
 
-**UNRELEASED**
+**4.0.0** (2022-12-18)
 
 - **BACKWARD INCOMPATIBLE** Bumped minimum Asphalt version to 4.8
 - **BACKWARD INCOMPATIBLE** Bumped minimum aiosmtplib version to 2.0
