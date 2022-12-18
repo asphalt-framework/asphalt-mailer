@@ -73,7 +73,7 @@ def test_create_message(
 
     if plain_body and html_body:
         assert msg["Content-Type"] == "multipart/alternative"
-        plain_part, html_part = cast(Iterator[EmailMessage], msg.iter_parts())
+        plain_part, html_part = cast("Iterator[EmailMessage]", msg.iter_parts())
     elif plain_body:
         plain_part, html_part = msg, None
     else:
