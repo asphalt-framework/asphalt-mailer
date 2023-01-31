@@ -21,7 +21,7 @@ pytestmark = pytest.mark.anyio
 
 class MessageHandler(AIOSMTPMessage):
     def __init__(self, message_class: type[Message] | None = None):
-        super().__init__(message_class)  # type: ignore[no-untyped-call]
+        super().__init__(message_class)
         self.messages: list[Any] = []
 
     def handle_message(self, message: Message) -> None:
