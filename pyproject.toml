@@ -95,9 +95,6 @@ minversion = 4.0
 extras = test
 commands = python -m pytest {posargs}
 
-[testenv:py311]
-deps = aiosmtpd @ git+https://github.com/aio-libs/aiosmtpd.git@693c5fdd4398f3582978d9b25b6e4104270c2237
-
 [testenv:docs]
 extras = doc
 commands = sphinx-build docs build/sphinx {posargs}
