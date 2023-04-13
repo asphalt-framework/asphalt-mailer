@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from asphalt.mailer.mailers.mock import MockMailer
 
 pytestmark = pytest.mark.anyio

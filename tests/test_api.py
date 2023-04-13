@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from email.headerregistry import Address
 from email.message import EmailMessage
-from typing import Any, Iterable, cast
+from typing import Any, cast
 
 import pytest
-
 from asphalt.mailer.api import Mailer
 
 pytestmark = pytest.mark.anyio

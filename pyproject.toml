@@ -59,16 +59,18 @@ sendmail = "asphalt.mailer.mailers.sendmail:SendmailMailer"
 version_scheme = "post-release"
 local_scheme = "dirty-tag"
 
-[tool.isort]
-skip_gitignore = true
-profile = "black"
+[tool.ruff]
+line-length = 88
+select = [
+    "E", "F", "W",  # default Flake8
+    "I",            # isort
+    "ISC",          # flake8-implicit-str-concat
+    "PGH",          # pygrep-hooks
+    "RUF100",       # unused noqa (yesqa)
+    "UP",           # pyupgrade
+]
+target-version = "py311"
 
-[tool.flake8]
-max-line-length = 88
-
-[tool.pytest.ini_options]
-addopts = "-rsx --tb=short"
-testpaths = ["tests"]
 
 [tool.mypy]
 python_version = "3.8"

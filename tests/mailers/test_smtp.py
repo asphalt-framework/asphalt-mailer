@@ -12,7 +12,6 @@ import pytest
 from aiosmtpd.handlers import Message as AIOSMTPMessage
 from aiosmtpd.smtp import SMTP, AuthResult, Envelope, Session
 from asphalt.core.context import Context
-
 from asphalt.mailer.api import DeliveryError
 from asphalt.mailer.mailers.smtp import SMTPMailer
 

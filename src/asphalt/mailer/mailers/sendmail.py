@@ -3,9 +3,10 @@ from __future__ import annotations
 import subprocess
 import sys
 from asyncio import create_subprocess_exec
+from collections.abc import Iterable
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from ..api import DeliveryError, Mailer
 from ..utils import get_recipients

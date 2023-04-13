@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from email.message import EmailMessage
 from ssl import SSLContext
-from typing import Any, Iterable
+from typing import Any
 
 from aiosmtplib import SMTP, SMTPTimeoutError
 from asphalt.core import current_context, require_resource

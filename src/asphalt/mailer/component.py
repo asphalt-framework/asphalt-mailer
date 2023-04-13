@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 from asphalt.core import Component, Context, PluginContainer, qualified_name
-
 from asphalt.mailer.api import Mailer
 
 mailer_backends = PluginContainer("asphalt.mailer.mailers", Mailer)

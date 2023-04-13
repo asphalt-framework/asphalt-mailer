@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from asyncio import get_running_loop
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Iterable
 from email.headerregistry import Address
 from email.message import EmailMessage
 from mimetypes import guess_type
 from pathlib import Path
-from typing import Any, Iterable, Union
+from typing import Any, Union
 
-AddressListType = Union[str, Address, Iterable[Union[str, Address]]]
+AddressListType = Union[str, Address, "Iterable[str | Address]"]
 
 
 class DeliveryError(Exception):
