@@ -8,7 +8,7 @@ This library adheres to `Semantic Versioning <http://semver.org/>`_.
 - **BACKWARD INCOMPATIBLE** Bumped minimum Asphalt version to 4.8
 - **BACKWARD INCOMPATIBLE** Bumped minimum aiosmtplib version to 2.0
 - **BACKWARD INCOMPATIBLE** Refactored component to only provide a single mailer
-  (you will have to add two components to get two serializers)
+  (you will have to add two components to get two mailers)
 - **BACKWARD INCOMPATIBLE** Dropped the context attribute (use dependency injection
   instead)
 - Dropped explicit run-time type checking
