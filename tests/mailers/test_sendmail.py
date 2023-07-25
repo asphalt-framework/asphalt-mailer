@@ -26,19 +26,17 @@ def outfile(tmp_path: Path) -> Path:
 def script(tmp_path: Path, recipients: tuple[str, ...], outfile: Path) -> str:
     p = tmp_path / "sendmail"
     p.write_text(
-        """\
-#!{interpreter}
+        f"""\
+#!{sys.executable}
 import sys
 
 if sys.argv[1:] != ['-i', '-B', '8BITMIME'] + list({recipients!r}):
     print('Wrong arguments; got {{!r}}'.format(sys.argv), file=sys.stderr)
     sys.exit(1)
 
-with open({outfile!r}, 'w') as f:
+with open({str(outfile)!r}, 'w') as f:
     f.write(sys.stdin.read())
-""".format(
-            interpreter=sys.executable, recipients=recipients, outfile=str(outfile)
-        )
+"""
     )
     p.chmod(0o555)
     return str(p)
@@ -48,16 +46,14 @@ with open({outfile!r}, 'w') as f:
 def fail_script(tmp_path: Path) -> str:
     p = tmp_path / "sendmail"
     p.write_text(
-        """\
-#!{interpreter}
+        f"""\
+#!{sys.executable}
 import sys
 
 print('This is a test error', file=sys.stderr)
 sys.exit(1)
 
-""".format(
-            interpreter=sys.executable
-        )
+"""
     )
     p.chmod(0o555)
     return str(p)
