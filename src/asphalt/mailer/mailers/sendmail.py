@@ -54,4 +54,4 @@ class SendmailMailer(Mailer):
                 raise DeliveryError(error, message)
 
     def __repr__(self) -> str:
-        return "{0.__class__.__name__}({0.path!r})".format(self)
+        return f"{self.__class__.__name__}({self.path!r})"
