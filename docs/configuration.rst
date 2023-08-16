@@ -45,7 +45,7 @@ Multiple mailers
 ----------------
 
 If you need to configure multiple mailers, you will need to use multiple instances
-of the mailer component::
+of the mailer component:
 
 .. code-block:: yaml
 
