@@ -31,6 +31,7 @@ class MailerComponent(Component):
             self.mailer, self.resource_name, types=[Mailer, type(self.mailer)]
         )
         logger.info(
-            f"Configured mailer ({self.resource_name}; "
-            f"class={qualified_name(self.mailer)})"
+            "Configured mailer (%s; class=%s)",
+            self.resource_name,
+            qualified_name(self.mailer),
         )
