@@ -38,7 +38,8 @@ Homepage = "https://github.com/asphalt-framework/asphalt-mailer"
 test = [
     "aiosmtpd",
     "anyio >= 3.6.1",
-    "pytest",
+    "coverage >= 7",
+    "pytest >= 7.4",
     "trustme",
 ]
 doc = [
