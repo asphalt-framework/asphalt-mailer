@@ -1,6 +1,6 @@
 from email.message import EmailMessage
 
-from asphalt.mailer.utils import get_recipients
+from asphalt.mailer import get_recipients
 
 
 def test_get_recipients() -> None:

@@ -8,10 +8,8 @@ from email.message import EmailMessage
 from pathlib import Path
 from typing import Any
 
-from ..api import DeliveryError, Mailer
-from ..utils import get_recipients
-
-__all__ = ["SendmailMailer"]
+from .._api import DeliveryError, Mailer
+from .._utils import get_recipients
 
 
 class SendmailMailer(Mailer):

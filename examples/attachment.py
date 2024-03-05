@@ -2,13 +2,17 @@
 A simple command line tool that connects to an SMTP server, sends a mail message with an
 attachment and then exits.
 """
+
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 
+# isort: off
 import click
-from asphalt.core import CLIApplicationComponent, Context, run_application
+from asphalt.core import CLIApplicationComponent, require_resource, run_application
+from asphalt.mailer import Mailer
 
 
 class ApplicationComponent(CLIApplicationComponent):
@@ -20,7 +24,7 @@ class ApplicationComponent(CLIApplicationComponent):
         sender: str,
         to: str,
         subject: str,
-        attachment: Path | None,
+        attachment: Path,
     ):
         super().__init__()
         self.host = host
@@ -31,7 +35,7 @@ class ApplicationComponent(CLIApplicationComponent):
         self.subject = subject
         self.attachment = attachment
 
-    async def start(self, ctx: Context) -> None:
+    async def start(self) -> None:
         self.add_component(
             "mailer",
             backend="smtp",
@@ -39,17 +43,18 @@ class ApplicationComponent(CLIApplicationComponent):
             username=self.username,
             password=self.password,
         )
-        await super().start(ctx)
+        await super().start()
 
-    async def run(self, ctx: Context) -> None:
-        message = ctx.mailer.create_message(
+    async def run(self) -> None:
+        mailer = require_resource(Mailer)  # type: ignore[type-abstract]
+        message = mailer.create_message(
             subject=self.subject,
             sender=self.sender,
             to=self.to,
             plain_body="Take a look at this file!",
         )
-        await ctx.mailer.add_file_attachment(message, self.attachment)
-        await ctx.mailer.deliver(message)
+        await mailer.add_file_attachment(message, self.attachment)
+        await mailer.deliver(message)
 
 
 @click.command()
@@ -72,7 +77,7 @@ def main(
     component = ApplicationComponent(
         host, username, password, sender, to, subject, attachment
     )
-    run_application(component, logging=logging.INFO)
+    asyncio.run(run_application(component, logging=logging.INFO))
 
 
 main()

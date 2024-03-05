@@ -2,12 +2,16 @@
 A simple command line tool that connects to an SMTP server, sends a mail message and
 then exits.
 """
+
 from __future__ import annotations
 
+import asyncio
 import logging
 
+# isort: off
 import click
-from asphalt.core import CLIApplicationComponent, Context, run_application
+from asphalt.core import CLIApplicationComponent, require_resource, run_application
+from asphalt.mailer import Mailer
 
 
 class ApplicationComponent(CLIApplicationComponent):
@@ -30,7 +34,7 @@ class ApplicationComponent(CLIApplicationComponent):
         self.subject = subject
         self.body = body
 
-    async def start(self, ctx: Context) -> None:
+    async def start(self) -> None:
         self.add_component(
             "mailer",
             backend="smtp",
@@ -38,10 +42,11 @@ class ApplicationComponent(CLIApplicationComponent):
             username=self.username,
             password=self.password,
         )
-        await super().start(ctx)
+        await super().start()
 
-    async def run(self, ctx: Context) -> None:
-        await ctx.mailer.create_and_deliver(
+    async def run(self) -> None:
+        mailer = require_resource(Mailer)  # type: ignore[type-abstract]
+        await mailer.create_and_deliver(
             subject=self.subject, sender=self.sender, to=self.to, plain_body=self.body
         )
 
@@ -66,7 +71,7 @@ def main(
     component = ApplicationComponent(
         host, username, password, sender, to, subject, body
     )
-    run_application(component, logging=logging.INFO)
+    asyncio.run(run_application(component, logging=logging.INFO))
 
 
 main()
