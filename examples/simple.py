@@ -2,6 +2,7 @@
 A simple command line tool that connects to an SMTP server, sends a mail message and
 then exits.
 """
+
 from __future__ import annotations
 
 import logging
