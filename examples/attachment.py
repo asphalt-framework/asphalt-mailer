@@ -11,7 +11,7 @@ from pathlib import Path
 
 # isort: off
 import click
-from asphalt.core import CLIApplicationComponent, require_resource, run_application
+from asphalt.core import CLIApplicationComponent, get_resource_nowait, run_application
 from asphalt.mailer import Mailer
 
 
@@ -46,7 +46,7 @@ class ApplicationComponent(CLIApplicationComponent):
         await super().start()
 
     async def run(self) -> None:
-        mailer = require_resource(Mailer)  # type: ignore[type-abstract]
+        mailer = get_resource_nowait(Mailer)  # type: ignore[type-abstract]
         message = mailer.create_message(
             subject=self.subject,
             sender=self.sender,

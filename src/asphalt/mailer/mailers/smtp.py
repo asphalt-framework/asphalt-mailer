@@ -7,7 +7,7 @@ from ssl import SSLContext
 from typing import Any
 
 from aiosmtplib import SMTP, SMTPTimeoutError
-from asphalt.core import current_context, require_resource
+from asphalt.core import add_teardown_callback, get_resource_nowait
 
 from .._api import DeliveryError, Mailer
 
@@ -63,7 +63,7 @@ class SMTPMailer(Mailer):
 
     async def start(self) -> None:
         if isinstance(self.tls_context, str):
-            tls_context: SSLContext | None = require_resource(
+            tls_context: SSLContext | None = get_resource_nowait(
                 SSLContext, self.tls_context
             )
         else:
@@ -75,7 +75,7 @@ class SMTPMailer(Mailer):
             tls_context=tls_context,
             timeout=self.timeout,
         )
-        current_context().add_teardown_callback(self._smtp.close)
+        add_teardown_callback(self._smtp.close)
 
     async def deliver(self, messages: EmailMessage | Iterable[EmailMessage]) -> None:
         if isinstance(messages, EmailMessage):

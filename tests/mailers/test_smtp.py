@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 from aiosmtpd.handlers import Message as AIOSMTPMessage
 from aiosmtpd.smtp import SMTP, AuthResult, Envelope, Session
-from asphalt.core import Context
+from asphalt.core import Context, add_resource
 
 from asphalt.mailer import DeliveryError
 from asphalt.mailer.mailers.smtp import SMTPMailer
@@ -73,11 +73,11 @@ def test_port_selection(
 
 async def test_resources() -> None:
     mailer = SMTPMailer(tls_context="contextresource")
-    async with Context() as ctx:
+    async with Context():
         sslcontext = ssl.create_default_context()
-        ctx.add_resource(sslcontext, "contextresource")
+        add_resource(sslcontext, "contextresource")
         await mailer.start()
-        assert mailer.tls_context is sslcontext
+        assert mailer._smtp.tls_context is sslcontext
 
 
 async def test_deliver(

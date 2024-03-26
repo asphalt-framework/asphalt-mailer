@@ -10,7 +10,7 @@ import logging
 
 # isort: off
 import click
-from asphalt.core import CLIApplicationComponent, require_resource, run_application
+from asphalt.core import CLIApplicationComponent, get_resource_nowait, run_application
 from asphalt.mailer import Mailer
 
 
@@ -45,7 +45,7 @@ class ApplicationComponent(CLIApplicationComponent):
         await super().start()
 
     async def run(self) -> None:
-        mailer = require_resource(Mailer)  # type: ignore[type-abstract]
+        mailer = get_resource_nowait(Mailer)  # type: ignore[type-abstract]
         await mailer.create_and_deliver(
             subject=self.subject, sender=self.sender, to=self.to, plain_body=self.body
         )

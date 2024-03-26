@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 import pytest
-from asphalt.core import Context, qualified_name, require_resource
+from asphalt.core import Context, get_resource_nowait, qualified_name
 from pytest import LogCaptureFixture
 
 from asphalt.mailer import Mailer, MailerComponent
@@ -17,7 +17,7 @@ async def test_component(caplog: LogCaptureFixture, backend: str) -> None:
     component = MailerComponent(backend=backend)
     async with Context():
         await component.start()
-        mailer = require_resource(Mailer)  # type: ignore[type-abstract]
+        mailer = get_resource_nowait(Mailer)  # type: ignore[type-abstract]
 
     records = [record for record in caplog.records if record.name == "asphalt.mailer"]
     records.sort(key=lambda r: r.message)
