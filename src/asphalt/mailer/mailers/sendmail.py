@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import subprocess
 import sys
-from asyncio import create_subprocess_exec
 from collections.abc import Iterable
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Any
+
+from anyio import run_process
 
 from .._api import DeliveryError, Mailer
 from .._utils import get_recipients
@@ -37,19 +38,18 @@ class SendmailMailer(Mailer):
             messages = [messages]
 
         for message in messages:
-            args = [self.path, "-i", "-B", "8BITMIME"] + get_recipients(message)
+            recipients = get_recipients(message)
+            del message["Bcc"]
+            command = [self.path, "-i", "-B", "8BITMIME"] + recipients
             try:
-                process = await create_subprocess_exec(
-                    *args, stdin=subprocess.PIPE, stderr=subprocess.PIPE
+                await run_process(
+                    command, input=message.as_bytes(), stderr=subprocess.PIPE
                 )
+            except subprocess.CalledProcessError as e:
+                error = e.stderr.decode(sys.stderr.encoding).rstrip()
+                raise DeliveryError(error, message) from e
             except Exception as e:
                 raise DeliveryError(str(e), message) from e
-
-            del message["Bcc"]
-            stdout, stderr = await process.communicate(message.as_bytes())
-            if process.returncode:
-                error = stderr.decode(sys.stderr.encoding).rstrip()
-                raise DeliveryError(error, message)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.path!r})"
