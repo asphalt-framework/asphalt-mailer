@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import ssl
-from asyncio import get_running_loop
 from base64 import b64decode
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator, Callable, Generator
+from contextlib import contextmanager
 from email.message import EmailMessage, Message
 from typing import Any
 
 import pytest
+from aiosmtpd.controller import Controller
 from aiosmtpd.handlers import Message as AIOSMTPMessage
 from aiosmtpd.smtp import SMTP, AuthResult, Envelope, Session
 from asphalt.core import Context, add_resource
@@ -28,46 +28,75 @@ class MessageHandler(AIOSMTPMessage):
         self.messages.append(message)
 
 
-@asynccontextmanager
-async def run_smtp_server(
+class StartTLSController(Controller):
+    """
+    This special controller exists to allow starting aiosmtpd with an SSL context but
+    without implicit TLS.
+    """
+
+    def __init__(
+        self,
+        handler: Any,
+        factory: Callable[..., SMTP] = SMTP,
+        hostname: str | None = None,
+        port: int = 0,
+        *,
+        ready_timeout: float = 1.0,
+        ssl_context: ssl.SSLContext | None = None,
+    ):
+        super().__init__(
+            handler,
+            hostname=hostname,
+            port=port,
+            ready_timeout=ready_timeout,
+            ssl_context=None,
+        )
+        self.__factory = factory
+        self.__ssl_context = ssl_context
+
+    def factory(self) -> SMTP:
+        return self.__factory(
+            self.handler,
+            hostname=self.hostname,
+            tls_context=self.__ssl_context,
+            require_starttls=self.__ssl_context is not None,
+        )
+
+
+@contextmanager
+def run_smtp_server(
     port: int, handler: AIOSMTPMessage, server_tls_context: ssl.SSLContext | None = None
-) -> AsyncGenerator[SMTP, None]:
-    smtp = SMTP(
+) -> Generator[None, None, None]:
+    controller = StartTLSController(
         handler,
-        require_starttls=server_tls_context is not None,
-        tls_context=server_tls_context,
+        hostname="localhost",
+        port=port,
+        ssl_context=server_tls_context,
     )
-    server = await get_running_loop().create_server(lambda: smtp, port=port)
-    yield smtp
-    server.close()
-    await server.wait_closed()
+    controller.start()  # type: ignore[no-untyped-call]
+    yield
+    controller.stop()
 
 
 @pytest.fixture
 async def mailer(
-    free_tcp_port: int, client_tls_context: ssl.SSLContext, tls: bool
+    free_tcp_port: int, client_tls_context: ssl.SSLContext
 ) -> AsyncGenerator[SMTPMailer, None]:
-    mailer = SMTPMailer(
-        port=free_tcp_port, timeout=1, tls=tls, tls_context=client_tls_context
-    )
+    mailer = SMTPMailer(port=free_tcp_port, timeout=3, tls_context=client_tls_context)
     async with Context():
         await mailer.start()
         yield mailer
 
 
 @pytest.mark.parametrize(
-    "username, password, tls, expected_port",
+    "username, password, expected_port",
     [
-        pytest.param("foo", "bar", True, 587, id="forcetls"),
-        pytest.param("foo", "bar", None, 587, id="autotls"),
-        pytest.param("foo", "bar", False, 25, id="disabletls"),
-        pytest.param("foo", None, None, 25, id="nopassword"),
+        pytest.param("foo", "bar", 587, id="tls"),
+        pytest.param("foo", None, 25, id="plain"),
     ],
 )
-def test_port_selection(
-    username: str, password: str, tls: bool, expected_port: int
-) -> None:
-    mailer = SMTPMailer(username=username, password=password, tls=tls)
+def test_port_selection(username: str, password: str, expected_port: int) -> None:
+    mailer = SMTPMailer(username=username, password=password)
     assert mailer.port == expected_port
 
 
@@ -77,14 +106,14 @@ async def test_resources() -> None:
         sslcontext = ssl.create_default_context()
         add_resource(sslcontext, "contextresource")
         await mailer.start()
-        assert mailer._smtp.tls_context is sslcontext
+        assert mailer.client.ssl_context is sslcontext
 
 
 async def test_deliver(
     mailer: SMTPMailer, sample_message: EmailMessage, free_tcp_port: int
 ) -> None:
     handler = MessageHandler()
-    async with run_smtp_server(free_tcp_port, handler):
+    with run_smtp_server(free_tcp_port, handler):
         await mailer.deliver(sample_message)
 
     assert len(handler.messages) == 1
@@ -109,10 +138,10 @@ async def test_deliver(
 
 
 async def test_deliver_auth(
-    mailer: SMTPMailer,
     sample_message: EmailMessage,
     free_tcp_port: int,
     server_tls_context: ssl.SSLContext,
+    client_tls_context: ssl.SSLContext,
 ) -> None:
     """Test that authentication works."""
 
@@ -124,11 +153,18 @@ async def test_deliver_auth(
             else:
                 return AuthResult(success=False)
 
-    mailer.username = "foo"
-    mailer.password = "bar"
+    mailer = SMTPMailer(
+        port=free_tcp_port,
+        username="foo",
+        password="bar",
+        timeout=3,
+        tls_context=client_tls_context,
+    )
     handler = AuthHandler()
-    async with run_smtp_server(free_tcp_port, handler, server_tls_context):
-        await mailer.deliver(sample_message)
+    with run_smtp_server(free_tcp_port, handler, server_tls_context):
+        async with Context():
+            await mailer.start()
+            await mailer.deliver(sample_message)
 
     assert len(handler.messages) == 1
 
@@ -136,11 +172,11 @@ async def test_deliver_auth(
 async def test_deliver_connect_error(
     mailer: SMTPMailer, sample_message: EmailMessage, free_tcp_port: int
 ) -> None:
-    mailer._smtp.port = free_tcp_port + 1
+    mailer.client.port = free_tcp_port + 1
     with pytest.raises(DeliveryError) as exc:
         await mailer.deliver(sample_message)
 
-    exc.match(f"Error connecting to localhost on port {mailer._smtp.port}")
+    exc.match(f"Error connecting to localhost on port {mailer.client.port}")
 
 
 async def test_deliver_error(
@@ -156,12 +192,12 @@ async def test_deliver_error(
         ) -> str:
             return "503 Error: foo"
 
-    async with run_smtp_server(free_tcp_port, BadHandler()):
+    with run_smtp_server(free_tcp_port, BadHandler()):
         with pytest.raises(DeliveryError) as exc:
             await mailer.deliver(sample_message)
 
     exc.match("Error: foo")
 
 
-def test_repr(mailer: SMTPMailer, free_tcp_port: int) -> None:
+async def test_repr(mailer: SMTPMailer, free_tcp_port: int) -> None:
     assert repr(mailer) == f"SMTPMailer(host='localhost', port={free_tcp_port})"
