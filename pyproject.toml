@@ -41,7 +41,7 @@ gmail = [
 ]
 test = [
     "aiosmtpd",
-    "anyio ~= 4.1",
+    "anyio[trio] ~= 4.1",
     "coverage >= 7",
     "pytest >= 7.4",
     "trustme",

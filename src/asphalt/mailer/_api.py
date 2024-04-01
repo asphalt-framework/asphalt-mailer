@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from asyncio import get_running_loop
 from collections.abc import Awaitable, Iterable
 from email.headerregistry import Address
 from email.message import EmailMessage
 from mimetypes import guess_type
-from pathlib import Path
+from os import PathLike
 from typing import Any, Union
+
+from anyio import Path
 
 AddressListType = Union[str, Address, "Iterable[str | Address]"]
 
@@ -146,7 +147,7 @@ class Mailer(metaclass=ABCMeta):
     async def add_file_attachment(
         cls,
         msg: EmailMessage,
-        path: str | Path,
+        path: str | PathLike[str],
         filename: str | None = None,
         mimetype: str | None = None,
     ) -> None:
@@ -162,9 +163,9 @@ class Mailer(metaclass=ABCMeta):
         :param mimetype: the MIME type indicating the type of the file
 
         """
-        path = Path(path)
-        content = await get_running_loop().run_in_executor(None, path.read_bytes)
-        cls.add_attachment(msg, content, filename or path.name, mimetype)
+        async_path = Path(path)
+        content = await async_path.read_bytes()
+        cls.add_attachment(msg, content, filename or async_path.name, mimetype)
 
     def create_and_deliver(self, **kwargs: Any) -> Awaitable[None]:
         """
