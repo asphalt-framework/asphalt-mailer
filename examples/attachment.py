@@ -5,7 +5,6 @@ attachment and then exits.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from pathlib import Path
 
@@ -77,7 +76,7 @@ def main(
     component = ApplicationComponent(
         host, username, password, sender, to, subject, attachment
     )
-    asyncio.run(run_application(component, logging=logging.INFO))
+    run_application(component, logging=logging.INFO)
 
 
 main()

@@ -5,7 +5,6 @@ then exits.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 
 # isort: off
@@ -71,7 +70,7 @@ def main(
     component = ApplicationComponent(
         host, username, password, sender, to, subject, body
     )
-    asyncio.run(run_application(component, logging=logging.INFO))
+    run_application(component, logging=logging.INFO)
 
 
 main()
