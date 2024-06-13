@@ -73,7 +73,7 @@ def run_smtp_server(
         port=port,
         ssl_context=server_tls_context,
     )
-    controller.start()  # type: ignore[no-untyped-call]
+    controller.start()
     yield
     controller.stop()
 

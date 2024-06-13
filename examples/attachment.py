@@ -73,10 +73,16 @@ def main(
     subject: str,
     attachment: Path,
 ) -> None:
-    component = ApplicationComponent(
-        host, username, password, sender, to, subject, attachment
-    )
-    run_application(component, logging=logging.INFO)
+    config = {
+        "host": host,
+        "username": username,
+        "password": password,
+        "sender": sender,
+        "to": to,
+        "subject": subject,
+        "attachment": attachment,
+    }
+    run_application(ApplicationComponent, config, logging=logging.INFO)
 
 
 main()

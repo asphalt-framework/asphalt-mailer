@@ -67,13 +67,13 @@ local_scheme = "dirty-tag"
 [tool.ruff.lint]
 extend-select = [
     "ASYNC",        # flake8-async
-    "W",            # pycodestyle warnings
     "G",            # flake8-logging-format
     "I",            # isort
     "ISC",          # flake8-implicit-str-concat
     "PGH",          # pygrep-hooks
     "RUF100",       # unused noqa (yesqa)
     "UP",           # pyupgrade
+    "W",            # pycodestyle warnings
 ]
 
 [tool.ruff.lint.isort]
