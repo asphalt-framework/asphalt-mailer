@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from collections.abc import Awaitable, Iterable
+from collections.abc import Iterable
 from email.headerregistry import Address
 from email.message import EmailMessage
 from mimetypes import guess_type
@@ -23,9 +23,11 @@ class DeliveryError(Exception):
 
     def __init__(self, error: str, message: EmailMessage | None = None):
         super().__init__(error, message)
+        self.error = error
+        self.message = message
 
     def __str__(self) -> str:
-        return f"error sending mail message: {self.args[0]}"
+        return f"error sending mail message: {self.error}"
 
 
 class Mailer(metaclass=ABCMeta):
@@ -167,18 +169,36 @@ class Mailer(metaclass=ABCMeta):
         content = await async_path.read_bytes()
         cls.add_attachment(msg, content, filename or async_path.name, mimetype)
 
-    def create_and_deliver(self, **kwargs: Any) -> Awaitable[None]:
+    async def create_and_deliver(
+        self,
+        *,
+        subject: str | None = None,
+        sender: str | Address | None = None,
+        to: AddressListType | None = None,
+        cc: AddressListType | None = None,
+        bcc: AddressListType | None = None,
+        charset: str | None = None,
+        plain_body: str | None = None,
+        html_body: str | None = None,
+    ) -> None:
         """
         Build a new email message and deliver it.
 
         This is a shortcut to calling :meth:`create_message` and then passing the result
         to :meth:`deliver`.
-
-        :param kwargs: keyword arguments passed to :meth:`create_message`
         """
 
-        msg = self.create_message(**kwargs)
-        return self.deliver(msg)
+        msg = self.create_message(
+            subject=subject,
+            sender=sender,
+            to=to,
+            cc=cc,
+            bcc=bcc,
+            charset=charset,
+            plain_body=plain_body,
+            html_body=html_body,
+        )
+        return await self.deliver(msg)
 
     @abstractmethod
     async def deliver(self, messages: EmailMessage | Iterable[EmailMessage]) -> None:

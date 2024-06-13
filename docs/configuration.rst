@@ -26,18 +26,14 @@ for the backend class:
         username: foo
         password: bar
 
-This configuration uses ``primary-smtp.company.com`` as the server hostname. Because it has a
-user name and password defined, the mailer will automatically use port 587 and STARTTLS_ before
-authenticating itself with the server.
+This configuration uses ``primary-smtp.company.com`` as the server hostname. Because it
+has a user name and password defined, the mailer will automatically use port 587 and
+STARTTLS_ before authenticating itself with the server.
 
-The above configuration can be done directly in Python code as follows::
+The above configuration can be done directly in Python code as follows:
 
-    class ApplicationComponent(ContainerComponent):
-        async def start(ctx: Context):
-            self.add_component(
-                'mailer', backend='smtp', host='primary-smtp.company.com', username='foo',
-                password='bar')
-            await super().start()
+.. literalinclude:: snippets/configuration1.py
+    :language: python
 
 .. _STARTTLS: https://en.wikipedia.org/wiki/Opportunistic_TLS
 
@@ -55,8 +51,8 @@ of the mailer component:
         host: primary-smtp.company.com
         username: foo
         password: dummypass
-      mailer2:
-        type: mailer
+      mailer/alternate:
+        resource_name: alternate
         backend: sendmail
 
-The above configuration creates two mailer resources: ``mailer`` and ``mailer2``.
+The above configuration creates two mailer resources: ``default`` and ``alternate``.
