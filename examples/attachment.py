@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 
 import click
+
 from asphalt.core import CLIApplicationComponent, Context, run_application
 
 

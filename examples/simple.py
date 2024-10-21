@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 
 import click
+
 from asphalt.core import CLIApplicationComponent, Context, run_application
 
 
