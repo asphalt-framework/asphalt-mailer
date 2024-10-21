@@ -7,6 +7,7 @@ from ssl import SSLContext
 from typing import Any
 
 from aiosmtplib import SMTP, SMTPTimeoutError
+
 from asphalt.core import current_context, require_resource
 
 from ..api import DeliveryError, Mailer

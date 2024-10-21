@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 
 import pytest
+from pytest import LogCaptureFixture
+
 from asphalt.core import qualified_name
 from asphalt.core.context import Context
 from asphalt.mailer.api import Mailer
 from asphalt.mailer.component import MailerComponent
-from pytest import LogCaptureFixture
 
 pytestmark = pytest.mark.anyio
 
