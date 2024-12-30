@@ -5,6 +5,9 @@ This library adheres to `Semantic Versioning <http://semver.org/>`_.
 
 **UNRELEASED**
 
+- **BACKWARD INCOMPATIBLE** Migrated to Asphalt 5.0
+- **BACKWARD INCOMPATIBLE** Switched from ``aiosmtplib`` to ``smtpproto`` as the backing
+  library for the ``smtp`` mailer
 - Dropped Python 3.7 support
 
 **4.0.0** (2022-12-18)

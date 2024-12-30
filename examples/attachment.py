@@ -6,33 +6,26 @@ attachment and then exits.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
+# isort: off
 import click
-from asphalt.core import CLIApplicationComponent, Context, run_application
+from asphalt.core import CLIApplicationComponent, get_resource_nowait, run_application
+from asphalt.mailer import Mailer
 
 
+@dataclass
 class ApplicationComponent(CLIApplicationComponent):
-    def __init__(
-        self,
-        host: str,
-        username: str | None,
-        password: str | None,
-        sender: str,
-        to: str,
-        subject: str,
-        attachment: Path | None,
-    ):
-        super().__init__()
-        self.host = host
-        self.username = username
-        self.password = password
-        self.sender = sender
-        self.to = to
-        self.subject = subject
-        self.attachment = attachment
+    host: str
+    username: str | None
+    password: str | None
+    sender: str
+    to: str
+    subject: str
+    attachment: Path
 
-    async def start(self, ctx: Context) -> None:
+    def __post_init__(self) -> None:
         self.add_component(
             "mailer",
             backend="smtp",
@@ -40,17 +33,17 @@ class ApplicationComponent(CLIApplicationComponent):
             username=self.username,
             password=self.password,
         )
-        await super().start(ctx)
 
-    async def run(self, ctx: Context) -> None:
-        message = ctx.mailer.create_message(
+    async def run(self) -> None:
+        mailer = get_resource_nowait(Mailer)  # type: ignore[type-abstract]
+        message = mailer.create_message(
             subject=self.subject,
             sender=self.sender,
             to=self.to,
             plain_body="Take a look at this file!",
         )
-        await ctx.mailer.add_file_attachment(message, self.attachment)
-        await ctx.mailer.deliver(message)
+        await mailer.add_file_attachment(message, self.attachment)
+        await mailer.deliver(message)
 
 
 @click.command()
@@ -70,10 +63,16 @@ def main(
     subject: str,
     attachment: Path,
 ) -> None:
-    component = ApplicationComponent(
-        host, username, password, sender, to, subject, attachment
-    )
-    run_application(component, logging=logging.INFO)
+    config = {
+        "host": host,
+        "username": username,
+        "password": password,
+        "sender": sender,
+        "to": to,
+        "subject": subject,
+        "attachment": attachment,
+    }
+    run_application(ApplicationComponent, config, logging=logging.INFO)
 
 
 main()

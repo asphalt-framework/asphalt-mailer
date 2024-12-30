@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from email.message import EmailMessage
 from typing import Any
 
-from ..api import Mailer
+from .._api import Mailer
 
 
 class MockMailer(Mailer):

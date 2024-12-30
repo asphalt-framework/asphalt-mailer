@@ -6,7 +6,8 @@ from email.message import EmailMessage
 from pathlib import Path
 
 import pytest
-from asphalt.mailer.api import DeliveryError, Mailer
+
+from asphalt.mailer import DeliveryError, Mailer
 from asphalt.mailer.mailers.sendmail import SendmailMailer
 
 pytestmark = [

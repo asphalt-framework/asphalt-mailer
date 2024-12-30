@@ -1,40 +1,31 @@
 API reference
 =============
 
+.. py:currentmodule:: asphalt.mailer
+
 Component
 ---------
 
-.. automodule:: asphalt.mailer.component
-    :members:
+.. autoclass:: MailerComponent
 
 Interfaces
 ----------
 
-.. autoclass:: asphalt.mailer.api.Mailer
-    :members:
+.. autoclass:: Mailer
 
 Exceptions
 ----------
 
-.. autoexception:: asphalt.mailer.api.DeliveryError
+.. autoexception:: DeliveryError
 
 Utilities
 ---------
 
-.. automodule:: asphalt.mailer.utils
-    :members:
+.. autofunction:: get_recipients
 
 Mailer back-ends
 ----------------
 
-.. automodule:: asphalt.mailer.mailers.smtp
-    :members:
-    :show-inheritance:
-
-.. automodule:: asphalt.mailer.mailers.sendmail
-    :members:
-    :show-inheritance:
-
-.. automodule:: asphalt.mailer.mailers.mock
-    :members:
-    :show-inheritance:
+.. autoclass:: asphalt.mailer.mailers.smtp.SMTPMailer
+.. autoclass:: asphalt.mailer.mailers.sendmail.SendmailMailer
+.. autoclass:: asphalt.mailer.mailers.mock.MockMailer

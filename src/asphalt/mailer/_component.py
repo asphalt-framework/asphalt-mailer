@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from asphalt.core import Component, Context, PluginContainer, qualified_name
-from asphalt.mailer.api import Mailer
+from asphalt.core import Component, PluginContainer, add_resource, qualified_name
+
+from asphalt.mailer._api import Mailer
 
 mailer_backends = PluginContainer("asphalt.mailer.mailers", Mailer)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("asphalt.mailer")
 
 
 class MailerComponent(Component):
@@ -25,11 +26,9 @@ class MailerComponent(Component):
         self.mailer = mailer_backends.create_object(backend, **mailer_args)
         self.resource_name = resource_name
 
-    async def start(self, ctx: Context) -> None:
+    async def start(self) -> None:
         await self.mailer.start()
-        ctx.add_resource(
-            self.mailer, self.resource_name, types=[Mailer, type(self.mailer)]
-        )
+        add_resource(self.mailer, self.resource_name, types=[Mailer, type(self.mailer)])
         logger.info(
             "Configured mailer (%s; class=%s)",
             self.resource_name,

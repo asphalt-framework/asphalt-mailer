@@ -6,7 +6,8 @@ from email.message import EmailMessage
 from typing import Any, cast
 
 import pytest
-from asphalt.mailer.api import Mailer
+
+from asphalt.mailer import Mailer
 
 pytestmark = pytest.mark.anyio
 
@@ -60,8 +61,10 @@ def test_create_message(
 ) -> None:
     if not plain_body:
         del kwargs["plain_body"]
+
     if not html_body:
         del kwargs["html_body"]
+
     msg = mailer.create_message(subject="test subject", sender="foo@bar.baz", **kwargs)
 
     assert msg["From"] == "foo@bar.baz"
@@ -81,6 +84,7 @@ def test_create_message(
     if plain_part:
         assert plain_part["Content-Type"] == 'text/plain; charset="iso-8859-1"'
         assert plain_part.get_content() == "Hello åäö\n"
+
     if html_part:
         assert html_part["Content-Type"] == 'text/html; charset="iso-8859-1"'
         assert html_part.get_content() == "<html><body>Hello åäö</body></html>\n"

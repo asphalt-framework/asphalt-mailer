@@ -6,32 +6,25 @@ then exits.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 
+# isort: off
 import click
-from asphalt.core import CLIApplicationComponent, Context, run_application
+from asphalt.core import CLIApplicationComponent, get_resource_nowait, run_application
+from asphalt.mailer import Mailer
 
 
+@dataclass
 class ApplicationComponent(CLIApplicationComponent):
-    def __init__(
-        self,
-        host: str,
-        username: str | None,
-        password: str | None,
-        sender: str,
-        to: str,
-        subject: str,
-        body: str,
-    ):
-        super().__init__()
-        self.host = host
-        self.username = username
-        self.password = password
-        self.sender = sender
-        self.to = to
-        self.subject = subject
-        self.body = body
+    host: str
+    username: str | None
+    password: str | None
+    sender: str
+    to: str
+    subject: str
+    body: str
 
-    async def start(self, ctx: Context) -> None:
+    def __post_init__(self) -> None:
         self.add_component(
             "mailer",
             backend="smtp",
@@ -39,10 +32,10 @@ class ApplicationComponent(CLIApplicationComponent):
             username=self.username,
             password=self.password,
         )
-        await super().start(ctx)
 
-    async def run(self, ctx: Context) -> None:
-        await ctx.mailer.create_and_deliver(
+    async def run(self) -> None:
+        mailer = get_resource_nowait(Mailer)  # type: ignore[type-abstract]
+        await mailer.create_and_deliver(
             subject=self.subject, sender=self.sender, to=self.to, plain_body=self.body
         )
 
@@ -64,10 +57,16 @@ def main(
     subject: str,
     body: str,
 ) -> None:
-    component = ApplicationComponent(
-        host, username, password, sender, to, subject, body
-    )
-    run_application(component, logging=logging.INFO)
+    config = {
+        "host": host,
+        "username": username,
+        "password": password,
+        "sender": sender,
+        "to": to,
+        "subject": subject,
+        "body": body,
+    }
+    run_application(ApplicationComponent, config, logging=logging.INFO)
 
 
 main()
