@@ -40,7 +40,7 @@ class SendmailMailer(Mailer):
         for message in messages:
             recipients = get_recipients(message)
             del message["Bcc"]
-            command = [self.path, "-i", "-B", "8BITMIME"] + recipients
+            command = [self.path, "-i", "-B", "8BITMIME", *recipients]
             try:
                 await run_process(
                     command, input=message.as_bytes(), stderr=subprocess.PIPE
