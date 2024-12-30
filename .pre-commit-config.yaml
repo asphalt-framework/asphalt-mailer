@@ -28,7 +28,7 @@ repos:
       - id: mypy
         additional_dependencies:
           - aiosmtpd
-          - asphalt@git+https://github.com/asphalt-framework/asphalt@5.0
+          - asphalt@git+https://github.com/asphalt-framework/asphalt
           - pytest
           - smtpproto >= 2.0
           - trustme
