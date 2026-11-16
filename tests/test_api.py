@@ -6,6 +6,7 @@ from email.message import EmailMessage
 from typing import Any, cast
 
 import pytest
+
 from asphalt.mailer.api import Mailer
 
 pytestmark = pytest.mark.anyio
